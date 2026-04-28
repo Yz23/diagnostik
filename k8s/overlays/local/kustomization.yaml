@@ -1,12 +1,38 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-bases:
+resources:
   - ../../base
 
 patches:
   - path: patches/storageclass.yaml
+    target:
+      kind: StatefulSet
+      name: opensearch-data
+  - path: patches/storageclass.yaml
+    target:
+      kind: StatefulSet
+      name: hdfs-datanode
+  - path: patches/storageclass.yaml
+    target:
+      kind: StatefulSet
+      name: hdfs-journalnode
+  - path: patches/storageclass.yaml
+    target:
+      kind: StatefulSet
+      name: hdfs-namenode
+  - path: patches/storageclass.yaml
+    target:
+      kind: StatefulSet
+      name: zookeeper
   - path: patches/resources-small.yaml
+    target:
+      kind: StatefulSet
+      name: opensearch-master
+  - path: patches/resources-small.yaml
+    target:
+      kind: StatefulSet
+      name: opensearch-data
 
 commonLabels:
   environment: local

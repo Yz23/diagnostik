@@ -1,7 +1,10 @@
 # ── GCP GKE Module ─────────────────────────────────────────────
 terraform {
   required_providers {
-    google = { source = "hashicorp/google", version = "~> 5.0" }
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
   }
 }
 
@@ -17,10 +20,12 @@ resource "google_compute_subnetwork" "subnet" {
   region        = var.region
   ip_cidr_range = "10.10.0.0/20"
   project       = var.project_id
+
   secondary_ip_range {
     range_name    = "pods"
     ip_cidr_range = "10.20.0.0/14"
   }
+
   secondary_ip_range {
     range_name    = "services"
     ip_cidr_range = "10.30.0.0/20"
@@ -45,7 +50,9 @@ resource "google_container_cluster" "primary" {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
 
-  release_channel { channel = "REGULAR" }
+  release_channel {
+    channel = "REGULAR"
+  }
 }
 
 resource "google_container_node_pool" "general" {
@@ -61,10 +68,21 @@ resource "google_container_node_pool" "general" {
     disk_size_gb = 100
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
     labels       = { role = "general" }
-    workload_metadata_config { mode = "GKE_METADATA" }
+
+    workload_metadata_config {
+      mode = "GKE_METADATA"
+    }
   }
-  management { auto_repair = true; auto_upgrade = true }
-  autoscaling { min_node_count = 1; max_node_count = 6 }
+
+  management {
+    auto_repair  = true
+    auto_upgrade = true
+  }
+
+  autoscaling {
+    min_node_count = 1
+    max_node_count = 6
+  }
 }
 
 resource "google_container_node_pool" "data" {
@@ -80,13 +98,25 @@ resource "google_container_node_pool" "data" {
     disk_size_gb = 500
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
     labels       = { role = "hadoop-data" }
+
     taint {
       key    = "dedicated"
       value  = "hadoop-data"
       effect = "NO_SCHEDULE"
     }
-    workload_metadata_config { mode = "GKE_METADATA" }
+
+    workload_metadata_config {
+      mode = "GKE_METADATA"
+    }
   }
-  management { auto_repair = true; auto_upgrade = true }
-  autoscaling { min_node_count = 3; max_node_count = 12 }
+
+  management {
+    auto_repair  = true
+    auto_upgrade = true
+  }
+
+  autoscaling {
+    min_node_count = 3
+    max_node_count = 12
+  }
 }

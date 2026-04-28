@@ -1,7 +1,15 @@
+# ── AWS EKS Module ─────────────────────────────────────────────
 terraform {
   required_providers {
-    aws = { source = "hashicorp/aws", version = "~> 5.0" }
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
   }
+}
+
+provider "aws" {
+  region = var.region
 }
 
 data "aws_availability_zones" "available" {}
@@ -44,6 +52,7 @@ module "eks" {
       disk_size      = 100
       labels         = { role = "general" }
     }
+
     data = {
       min_size       = 3
       max_size       = 12
@@ -51,11 +60,14 @@ module "eks" {
       instance_types = [var.data_instance_type]
       disk_size      = 500
       labels         = { role = "hadoop-data" }
-      taints = [{
-        key    = "dedicated"
-        value  = "hadoop-data"
-        effect = "NO_SCHEDULE"
-      }]
+
+      taints = [
+        {
+          key    = "dedicated"
+          value  = "hadoop-data"
+          effect = "NO_SCHEDULE"
+        }
+      ]
     }
   }
 }
