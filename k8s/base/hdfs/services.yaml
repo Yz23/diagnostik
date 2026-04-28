@@ -1,0 +1,124 @@
+# ZooKeeper headless
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper-headless
+  namespace: data-platform
+  labels:
+    app: zookeeper
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: zookeeper
+  ports:
+    - name: client
+      port: 2181
+    - name: follower
+      port: 2888
+    - name: election
+      port: 3888
+---
+# ZooKeeper ClusterIP for clients
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  namespace: data-platform
+  labels:
+    app: zookeeper
+spec:
+  type: ClusterIP
+  selector:
+    app: zookeeper
+  ports:
+    - name: client
+      port: 2181
+      targetPort: 2181
+---
+# JournalNode headless
+apiVersion: v1
+kind: Service
+metadata:
+  name: hdfs-journalnode-headless
+  namespace: data-platform
+  labels:
+    app: hdfs
+    role: journalnode
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: hdfs
+    role: journalnode
+  ports:
+    - name: rpc
+      port: 8485
+    - name: http
+      port: 8480
+---
+# NameNode headless (for discovery between nn0/nn1)
+apiVersion: v1
+kind: Service
+metadata:
+  name: hdfs-namenode-headless
+  namespace: data-platform
+  labels:
+    app: hdfs
+    role: namenode
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: hdfs
+    role: namenode
+  ports:
+    - name: rpc
+      port: 8020
+    - name: http
+      port: 9870
+---
+# NameNode ClusterIP — single entry point (HA proxy)
+apiVersion: v1
+kind: Service
+metadata:
+  name: hdfs-namenode
+  namespace: data-platform
+  labels:
+    app: hdfs
+    role: namenode
+spec:
+  type: ClusterIP
+  selector:
+    app: hdfs
+    role: namenode
+  ports:
+    - name: rpc
+      port: 8020
+      targetPort: 8020
+    - name: http
+      port: 9870
+      targetPort: 9870
+---
+# DataNode headless
+apiVersion: v1
+kind: Service
+metadata:
+  name: hdfs-datanode-headless
+  namespace: data-platform
+  labels:
+    app: hdfs
+    role: datanode
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: hdfs
+    role: datanode
+  ports:
+    - name: data
+      port: 9866
+    - name: http
+      port: 9864

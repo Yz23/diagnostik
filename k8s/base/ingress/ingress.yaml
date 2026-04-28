@@ -1,0 +1,105 @@
+# ── Ingress — OpenSearch Dashboards ──────────────────────────
+# Expose OpenSearch Dashboards (port 5601) vers l'extérieur.
+# Requiert nginx-ingress controller (ou GKE/AKS/EKS ingress natif).
+#
+# Installation nginx-ingress :
+#   kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+#
+# Pour Proxmox/local (k3s) :
+#   k3s inclut Traefik par défaut — ajouter les annotations Traefik
+#   ou installer nginx-ingress à la place.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: opensearch-dashboards-ingress
+  namespace: data-platform
+  labels:
+    app: opensearch-dashboards
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+
+    # Sticky sessions obligatoires pour les Dashboards multi-replicas
+    nginx.ingress.kubernetes.io/affinity: "cookie"
+    nginx.ingress.kubernetes.io/session-cookie-name: "dashboards_sticky"
+    nginx.ingress.kubernetes.io/session-cookie-expires: "172800"
+    nginx.ingress.kubernetes.io/session-cookie-change-on-failure: "true"
+
+    # Rate limiting (ajuster selon le trafic réel)
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+
+    # Proxy timeouts (Dashboards peut être lent au démarrage)
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+
+    # TLS (décommenter + configurer cert-manager pour activer HTTPS)
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  # TLS — décommenter une fois cert-manager configuré
+  # tls:
+  #   - hosts:
+  #       - dashboards.yourdomain.com
+  #     secretName: dashboards-tls-cert
+  rules:
+    - host: dashboards.yourdomain.com    # ← changer par votre domaine
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: opensearch-dashboards
+                port:
+                  number: 5601
+---
+# ── Ingress — YARN ResourceManager UI ────────────────────────
+# Optionnel : expose l'UI YARN pour monitorer les jobs MapReduce / Spark
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: yarn-ui-ingress
+  namespace: data-platform
+  labels:
+    app: yarn
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    # Pas de sticky session nécessaire pour l'UI YARN (read-only)
+    nginx.ingress.kubernetes.io/limit-rps: "30"
+spec:
+  rules:
+    - host: yarn.yourdomain.com         # ← changer par votre domaine
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: yarn-resourcemanager
+                port:
+                  number: 8088
+---
+# ── Ingress — HDFS NameNode UI ───────────────────────────────
+# Optionnel : expose l'UI HDFS NameNode pour monitorer le cluster HDFS
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hdfs-ui-ingress
+  namespace: data-platform
+  labels:
+    app: hdfs
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/limit-rps: "30"
+spec:
+  rules:
+    - host: hdfs.yourdomain.com         # ← changer par votre domaine
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hdfs-namenode
+                port:
+                  number: 9870

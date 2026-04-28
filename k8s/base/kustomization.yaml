@@ -1,0 +1,42 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Namespace
+  - namespace/namespace.yaml
+
+  # OpenSearch
+  - opensearch/configmap.yaml
+  - opensearch/secret-template.yaml
+  - opensearch/statefulset-master.yaml
+  - opensearch/statefulset-data.yaml
+  - opensearch/deployment-coordinator.yaml
+  - opensearch/services.yaml
+  - opensearch/poddisruptionbudget.yaml
+
+  # OpenSearch Dashboards
+  - opensearch-dashboards/configmap.yaml
+  - opensearch-dashboards/deployment.yaml
+  - opensearch-dashboards/service.yaml
+
+  # Logstash
+  - logstash/configmap.yaml
+  - logstash/deployment.yaml
+  - logstash/service.yaml
+
+  # HDFS (ZooKeeper + JournalNode + NameNode + DataNode)
+  - hdfs/configmap.yaml
+  - hdfs/statefulset-zookeeper.yaml
+  - hdfs/statefulset-journalnode.yaml
+  - hdfs/statefulset-namenode.yaml
+  - hdfs/statefulset-datanode.yaml
+  - hdfs/services.yaml
+
+  # YARN (ResourceManager + NodeManager + HistoryServer)
+  - yarn/statefulset-resourcemanager.yaml
+  - yarn/daemonset-nodemanager.yaml
+  - yarn/deployment-historyserver.yaml
+  - yarn/services.yaml
+
+  # Ingress
+  - ingress/ingress.yaml

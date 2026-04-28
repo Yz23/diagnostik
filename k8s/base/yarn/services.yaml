@@ -1,0 +1,89 @@
+# ResourceManager headless
+apiVersion: v1
+kind: Service
+metadata:
+  name: yarn-resourcemanager-headless
+  namespace: data-platform
+  labels:
+    app: yarn
+    role: resourcemanager
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: yarn
+    role: resourcemanager
+  ports:
+    - name: rpc
+      port: 8032
+    - name: http
+      port: 8088
+---
+# ResourceManager ClusterIP (active RM receives traffic)
+apiVersion: v1
+kind: Service
+metadata:
+  name: yarn-resourcemanager
+  namespace: data-platform
+  labels:
+    app: yarn
+    role: resourcemanager
+spec:
+  type: ClusterIP
+  selector:
+    app: yarn
+    role: resourcemanager
+  ports:
+    - name: rpc
+      port: 8032
+      targetPort: 8032
+    - name: http
+      port: 8088
+      targetPort: 8088
+    - name: scheduler
+      port: 8030
+      targetPort: 8030
+---
+# NodeManager (per-node, accessed by RM for heartbeats)
+apiVersion: v1
+kind: Service
+metadata:
+  name: yarn-nodemanager
+  namespace: data-platform
+  labels:
+    app: yarn
+    role: nodemanager
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: yarn
+    role: nodemanager
+  ports:
+    - name: rpc
+      port: 8041
+    - name: http
+      port: 8042
+---
+# History Server
+apiVersion: v1
+kind: Service
+metadata:
+  name: yarn-historyserver
+  namespace: data-platform
+  labels:
+    app: yarn
+    role: historyserver
+spec:
+  type: ClusterIP
+  selector:
+    app: yarn
+    role: historyserver
+  ports:
+    - name: rpc
+      port: 10020
+      targetPort: 10020
+    - name: http
+      port: 19888
+      targetPort: 19888

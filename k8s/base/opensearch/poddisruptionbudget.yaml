@@ -1,0 +1,23 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: opensearch-master-pdb
+  namespace: data-platform
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: opensearch
+      role: master
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: opensearch-data-pdb
+  namespace: data-platform
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: opensearch
+      role: data

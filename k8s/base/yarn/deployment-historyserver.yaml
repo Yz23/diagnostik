@@ -1,0 +1,55 @@
+# ── YARN History Server ───────────────────────────────────────
+# Stores completed job logs on HDFS. Single instance is sufficient.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yarn-historyserver
+  namespace: data-platform
+  labels:
+    app: yarn
+    role: historyserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yarn
+      role: historyserver
+  template:
+    metadata:
+      labels:
+        app: yarn
+        role: historyserver
+    spec:
+      containers:
+        - name: historyserver
+          image: apache/hadoop:3.3.6
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              cp /hadoop-config/core-site.xml   $HADOOP_CONF_DIR/core-site.xml
+              cp /hadoop-config/hdfs-site.xml   $HADOOP_CONF_DIR/hdfs-site.xml
+              cp /hadoop-config/yarn-site.xml   $HADOOP_CONF_DIR/yarn-site.xml
+              cp /hadoop-config/mapred-site.xml  $HADOOP_CONF_DIR/mapred-site.xml
+              mapred historyserver
+          ports:
+            - name: rpc
+              containerPort: 10020
+            - name: http
+              containerPort: 19888
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /ws/v1/history/info
+              port: 19888
+            initialDelaySeconds: 45
+            periodSeconds: 10
+      volumes:
+        - name: hadoop-config
+          configMap:
+            name: hadoop-config

@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch-master-headless
+  namespace: data-platform
+  labels:
+    app: opensearch
+    role: master
+  annotations:
+    service.alpha.kubernetes.io/tolerate-unready-endpoints: "true"
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app: opensearch
+    role: master
+  ports:
+    - name: http
+      port: 9200
+    - name: transport
+      port: 9300
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch-data-headless
+  namespace: data-platform
+  labels:
+    app: opensearch
+    role: data
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: opensearch
+    role: data
+  ports:
+    - name: http
+      port: 9200
+    - name: transport
+      port: 9300
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: opensearch
+  namespace: data-platform
+  labels:
+    app: opensearch
+    role: coordinator
+spec:
+  type: ClusterIP
+  selector:
+    app: opensearch
+    role: coordinator
+  ports:
+    - name: http
+      port: 9200
+      targetPort: 9200

@@ -1,0 +1,77 @@
+name: CI — Lint, Validate & Security Scan
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  secret-scan:
+    name: Gitleaks — secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  kube-validate:
+    name: kubeconform — validate all manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubeconform
+        run: |
+          curl -sLo kc.tar.gz https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+          tar xf kc.tar.gz && chmod +x kubeconform && sudo mv kubeconform /usr/local/bin/
+      - name: Validate base manifests
+        run: |
+          find k8s/base -name "*.yaml" ! -name "*secret*" \
+            | xargs kubeconform -kubernetes-version 1.30.0 -strict -summary
+
+  kustomize-build:
+    name: kustomize build — all overlays
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        overlay: [gcp, aws, azure, local]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: imranismail/setup-kustomize@v2
+      - name: Build overlay ${{ matrix.overlay }}
+        run: kustomize build k8s/overlays/${{ matrix.overlay }} > /dev/null
+
+  terraform-validate:
+    name: Terraform — fmt & validate all modules
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: [gcp-gke, aws-eks, azure-aks, local-k3s]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.7"
+      - name: fmt check — ${{ matrix.module }}
+        run: terraform -chdir=terraform/modules/${{ matrix.module }} fmt -check
+      - name: init — ${{ matrix.module }}
+        run: terraform -chdir=terraform/modules/${{ matrix.module }} init -backend=false
+      - name: validate — ${{ matrix.module }}
+        run: terraform -chdir=terraform/modules/${{ matrix.module }} validate
+
+  no-hardcoded-secrets:
+    name: Check — no hardcoded passwords in YAML
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Grep for hardcoded values
+        run: |
+          if grep -rn "CHANGE_ME\|changeme\|password123" k8s/ --include="*.yaml" \
+            | grep -v "secret-template.yaml"; then
+            echo "ERROR: Hardcoded password found in manifests."
+            exit 1
+          fi
+          echo "✓ Clean."

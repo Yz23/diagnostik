@@ -1,0 +1,4 @@
+# Patch all PVC templates to use AWS gp3
+- op: replace
+  path: /spec/volumeClaimTemplates/0/spec/storageClassName
+  value: gp3

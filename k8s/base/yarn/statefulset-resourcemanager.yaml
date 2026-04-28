@@ -1,0 +1,94 @@
+# ── YARN ResourceManagers (HA) ────────────────────────────────
+# rm0 = active, rm1 = standby. Automatic failover via ZooKeeper.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: yarn-resourcemanager
+  namespace: data-platform
+  labels:
+    app: yarn
+    role: resourcemanager
+spec:
+  serviceName: yarn-resourcemanager-headless
+  replicas: 2
+  selector:
+    matchLabels:
+      app: yarn
+      role: resourcemanager
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: yarn
+        role: resourcemanager
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: yarn
+                  role: resourcemanager
+              topologyKey: kubernetes.io/hostname
+      initContainers:
+        - name: wait-for-zookeeper
+          image: busybox:1.36
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              until nc -z zookeeper-0.zookeeper-headless 2181; do
+                echo "Waiting for ZooKeeper..."; sleep 3
+              done
+      containers:
+        - name: resourcemanager
+          image: apache/hadoop:3.3.6
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              cp /hadoop-config/core-site.xml  $HADOOP_CONF_DIR/core-site.xml
+              cp /hadoop-config/hdfs-site.xml  $HADOOP_CONF_DIR/hdfs-site.xml
+              cp /hadoop-config/yarn-site.xml  $HADOOP_CONF_DIR/yarn-site.xml
+              cp /hadoop-config/mapred-site.xml $HADOOP_CONF_DIR/mapred-site.xml
+              # Derive RM ID from pod ordinal
+              ORDINAL=$(echo $HOSTNAME | awk -F'-' '{print $NF}')
+              export YARN_RM_OPTS="-Dyarn.resourcemanager.ha.id=rm${ORDINAL}"
+              yarn resourcemanager
+          ports:
+            - name: rpc
+              containerPort: 8032
+            - name: admin
+              containerPort: 8033
+            - name: http
+              containerPort: 8088
+            - name: scheduler
+              containerPort: 8030
+          env:
+            - name: YARN_RESOURCEMANAGER_OPTS
+              value: "-Xms1g -Xmx1g"
+          volumeMounts:
+            - name: hadoop-config
+              mountPath: /hadoop-config
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1"
+          readinessProbe:
+            httpGet:
+              path: /ws/v1/cluster/info
+              port: 8088
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /ws/v1/cluster/info
+              port: 8088
+            initialDelaySeconds: 90
+            periodSeconds: 30
+      volumes:
+        - name: hadoop-config
+          configMap:
+            name: hadoop-config

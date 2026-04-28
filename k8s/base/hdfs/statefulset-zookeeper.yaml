@@ -1,0 +1,87 @@
+# ── ZooKeeper — required for HDFS HA + YARN HA ───────────────
+# 3 nodes mandatory for quorum (majority = 2/3)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zookeeper
+  namespace: data-platform
+  labels:
+    app: zookeeper
+spec:
+  serviceName: zookeeper-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: zookeeper
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: zookeeper
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: zookeeper
+          image: zookeeper:3.9
+          ports:
+            - name: client
+              containerPort: 2181
+            - name: follower
+              containerPort: 2888
+            - name: election
+              containerPort: 3888
+          env:
+            - name: ZOO_MY_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name   # zookeeper-0 → ID set via initContainer
+            - name: ZOO_SERVERS
+              value: "server.1=zookeeper-0.zookeeper-headless:2888:3888;2181 server.2=zookeeper-1.zookeeper-headless:2888:3888;2181 server.3=zookeeper-2.zookeeper-headless:2888:3888;2181"
+            - name: ZOO_4LW_COMMANDS_WHITELIST
+              value: "mntr,conf,ruok,srvr"
+          command:
+            - /bin/bash
+            - -c
+            - |
+              # Extract ordinal from pod name (zookeeper-0 → 1, zookeeper-1 → 2, ...)
+              ORDINAL=$(echo $HOSTNAME | awk -F'-' '{print $NF}')
+              export ZOO_MY_ID=$((ORDINAL + 1))
+              /docker-entrypoint.sh zkServer.sh start-foreground
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          readinessProbe:
+            exec:
+              command: ["zkServer.sh", "status"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            exec:
+              command: ["zkServer.sh", "status"]
+            initialDelaySeconds: 30
+            periodSeconds: 30
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 5Gi

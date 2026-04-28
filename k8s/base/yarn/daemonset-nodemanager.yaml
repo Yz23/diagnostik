@@ -1,0 +1,82 @@
+# ── YARN NodeManagers ─────────────────────────────────────────
+# DaemonSet: one NodeManager per Kubernetes node labelled
+# role=hadoop-data — collocated with HDFS DataNodes for data locality.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: yarn-nodemanager
+  namespace: data-platform
+  labels:
+    app: yarn
+    role: nodemanager
+spec:
+  selector:
+    matchLabels:
+      app: yarn
+      role: nodemanager
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: yarn
+        role: nodemanager
+    spec:
+      nodeSelector:
+        role: hadoop-data      # only schedule on data-labelled nodes
+      tolerations:
+        - key: dedicated
+          value: hadoop-data
+          effect: NoSchedule
+      initContainers:
+        - name: wait-for-resourcemanager
+          image: busybox:1.36
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              until nc -z yarn-resourcemanager 8032; do
+                echo "Waiting for ResourceManager..."; sleep 5
+              done
+      containers:
+        - name: nodemanager
+          image: apache/hadoop:3.3.6
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              cp /hadoop-config/core-site.xml   $HADOOP_CONF_DIR/core-site.xml
+              cp /hadoop-config/hdfs-site.xml   $HADOOP_CONF_DIR/hdfs-site.xml
+              cp /hadoop-config/yarn-site.xml   $HADOOP_CONF_DIR/yarn-site.xml
+              cp /hadoop-config/mapred-site.xml  $HADOOP_CONF_DIR/mapred-site.xml
+              yarn nodemanager
+          ports:
+            - name: localizer
+              containerPort: 8040
+            - name: rpc
+              containerPort: 8041
+            - name: http
+              containerPort: 8042
+          env:
+            - name: YARN_NODEMANAGER_OPTS
+              value: "-Xms1g -Xmx1g"
+          volumeMounts:
+            - name: hadoop-config
+              mountPath: /hadoop-config
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
+          readinessProbe:
+            httpGet:
+              path: /node
+              port: 8042
+            initialDelaySeconds: 45
+            periodSeconds: 10
+      volumes:
+        - name: hadoop-config
+          configMap:
+            name: hadoop-config

@@ -1,0 +1,4 @@
+# Patch all PVC templates to use Azure managed premium disk
+- op: replace
+  path: /spec/volumeClaimTemplates/0/spec/storageClassName
+  value: managed-premium

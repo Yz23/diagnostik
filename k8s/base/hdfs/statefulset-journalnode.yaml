@@ -1,0 +1,77 @@
+# ── HDFS JournalNodes ─────────────────────────────────────────
+# 3 nodes required for edit-log quorum (both NameNodes write here)
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: hdfs-journalnode
+  namespace: data-platform
+  labels:
+    app: hdfs
+    role: journalnode
+spec:
+  serviceName: hdfs-journalnode-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hdfs
+      role: journalnode
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: hdfs
+        role: journalnode
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: hdfs
+                  role: journalnode
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: journalnode
+          image: apache/hadoop:3.3.6
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              cp /hadoop-config/core-site.xml $HADOOP_CONF_DIR/core-site.xml
+              cp /hadoop-config/hdfs-site.xml $HADOOP_CONF_DIR/hdfs-site.xml
+              hdfs journalnode
+          ports:
+            - name: rpc
+              containerPort: 8485
+            - name: http
+              containerPort: 8480
+          volumeMounts:
+            - name: hadoop-config
+              mountPath: /hadoop-config
+            - name: journal
+              mountPath: /hadoop/dfs/journal
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /journalstatus
+              port: 8480
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: hadoop-config
+          configMap:
+            name: hadoop-config
+  volumeClaimTemplates:
+    - metadata:
+        name: journal
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 20Gi
