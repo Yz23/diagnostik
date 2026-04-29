@@ -52,7 +52,7 @@ A complete, production-ready data platform deployable on any Kubernetes cluster 
 ## 🏗 Architecture
 
 ```
-                    ┌─────────────────────────────────────────────────┐
+                    ┌──────────────────────────────────────────────────┐
   Internet          │              namespace: data-platform            │
      │              │                                                  │
      ▼              │  ┌──────────────────── Search ────────────────┐  │
@@ -78,7 +78,7 @@ A complete, production-ready data platform deployable on any Kubernetes cluster 
                     │  │  nodemanager          [DaemonSet]          │  │
                     │  │  historyserver    ×1  [Deployment]         │  │
                     │  └────────────────────────────────────────────┘  │
-                    └─────────────────────────────────────────────────┘
+                    └──────────────────────────────────────────────────┘
 ```
 
 **HDFS boot sequence** — enforced automatically by `initContainers`:
@@ -374,7 +374,7 @@ Every push and pull request triggers the full pipeline:
 
 | Document | Description |
 |---|---|
-| [`docs/guide-debutant.docx`](docs/guide-debutant.docx) | 📖 Beginner guide (FR) — Kubernetes, OpenSearch, Hadoop HDFS/YARN, Terraform explained from scratch with analogies, commands and glossaries |
+| [`docs/stater_guide.docx`](docs/starter_guide.docx) | 📖 Beginner guide (FR) — Kubernetes, OpenSearch, Hadoop HDFS/YARN, Terraform explained from scratch with analogies, commands and glossaries |
 
 ---
 
