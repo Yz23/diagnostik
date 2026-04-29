@@ -25,6 +25,3 @@ patches:
     target:
       kind: StatefulSet
       name: zookeeper
-
-commonLabels:
-  environment: gcp
