@@ -6,7 +6,6 @@ metadata:
   labels:
     app: opensearch
     role: master
-  annotations:
 spec:
   type: ClusterIP
   clusterIP: None

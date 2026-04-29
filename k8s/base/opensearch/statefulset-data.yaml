@@ -73,10 +73,10 @@ spec:
           resources:
             requests:
               memory: "4Gi"
-              cpu: "1"
+              cpu: "1000m"
             limits:
               memory: "4Gi"
-              cpu: "2"
+              cpu: "2000m"
           readinessProbe:
             httpGet:
               path: /_cluster/health?local=true
@@ -109,7 +109,7 @@ spec:
         name: data
       spec:
         accessModes: ["ReadWriteOnce"]
-        storageClassName: standard   # overridden per overlay
+        storageClassName: standard
         resources:
           requests:
             storage: 50Gi

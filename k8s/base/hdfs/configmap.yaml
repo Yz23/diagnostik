@@ -1,5 +1,3 @@
-# ── Hadoop / HDFS / YARN shared configuration ─────────────────
-# HA setup: 2 NameNodes, 3 JournalNodes, 3 ZooKeeper nodes
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,232 +6,73 @@ metadata:
   labels:
     app: hadoop
 data:
-  # ── core-site.xml ────────────────────────────────────────────
   core-site.xml: |
     <?xml version="1.0" encoding="UTF-8"?>
-    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
     <configuration>
-      <!-- HA nameservice — clients connect here, not to a specific NameNode -->
       <property>
         <name>fs.defaultFS</name>
         <value>hdfs://hdfs-cluster</value>
       </property>
-
-      <!-- ZooKeeper quorum for NameNode HA failover -->
       <property>
         <name>ha.zookeeper.quorum</name>
         <value>zookeeper-0.zookeeper-headless:2181,zookeeper-1.zookeeper-headless:2181,zookeeper-2.zookeeper-headless:2181</value>
       </property>
-
-      <!-- Trash: keep deleted files for 6 hours -->
       <property>
         <name>fs.trash.interval</name>
         <value>360</value>
       </property>
     </configuration>
 
-  # ── hdfs-site.xml ────────────────────────────────────────────
   hdfs-site.xml: |
     <?xml version="1.0" encoding="UTF-8"?>
-    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
     <configuration>
-      <!-- Nameservice ID -->
-      <property>
-        <name>dfs.nameservices</name>
-        <value>hdfs-cluster</value>
-      </property>
-
-      <!-- NameNode IDs within the nameservice -->
-      <property>
-        <name>dfs.ha.namenodes.hdfs-cluster</name>
-        <value>nn0,nn1</value>
-      </property>
-
-      <!-- RPC addresses for each NameNode -->
-      <property>
-        <name>dfs.namenode.rpc-address.hdfs-cluster.nn0</name>
-        <value>hdfs-namenode-0.hdfs-namenode-headless.data-platform.svc.cluster.local:8020</value>
-      </property>
-      <property>
-        <name>dfs.namenode.rpc-address.hdfs-cluster.nn1</name>
-        <value>hdfs-namenode-1.hdfs-namenode-headless.data-platform.svc.cluster.local:8020</value>
-      </property>
-
-      <!-- HTTP addresses for each NameNode -->
-      <property>
-        <name>dfs.namenode.http-address.hdfs-cluster.nn0</name>
-        <value>hdfs-namenode-0.hdfs-namenode-headless.data-platform.svc.cluster.local:9870</value>
-      </property>
-      <property>
-        <name>dfs.namenode.http-address.hdfs-cluster.nn1</name>
-        <value>hdfs-namenode-1.hdfs-namenode-headless.data-platform.svc.cluster.local:9870</value>
-      </property>
-
-      <!-- JournalNode shared edits: 3 nodes for quorum -->
+      <property><name>dfs.nameservices</name><value>hdfs-cluster</value></property>
+      <property><name>dfs.ha.namenodes.hdfs-cluster</name><value>nn0,nn1</value></property>
+      <property><name>dfs.namenode.rpc-address.hdfs-cluster.nn0</name><value>hdfs-namenode-0.hdfs-namenode-headless.data-platform.svc.cluster.local:8020</value></property>
+      <property><name>dfs.namenode.rpc-address.hdfs-cluster.nn1</name><value>hdfs-namenode-1.hdfs-namenode-headless.data-platform.svc.cluster.local:8020</value></property>
+      <property><name>dfs.namenode.http-address.hdfs-cluster.nn0</name><value>hdfs-namenode-0.hdfs-namenode-headless.data-platform.svc.cluster.local:9870</value></property>
+      <property><name>dfs.namenode.http-address.hdfs-cluster.nn1</name><value>hdfs-namenode-1.hdfs-namenode-headless.data-platform.svc.cluster.local:9870</value></property>
       <property>
         <name>dfs.namenode.shared.edits.dir</name>
         <value>qjournal://hdfs-journalnode-0.hdfs-journalnode-headless.data-platform.svc.cluster.local:8485;hdfs-journalnode-1.hdfs-journalnode-headless.data-platform.svc.cluster.local:8485;hdfs-journalnode-2.hdfs-journalnode-headless.data-platform.svc.cluster.local:8485/hdfs-cluster</value>
       </property>
-
-      <!-- Proxy provider for HA clients -->
-      <property>
-        <name>dfs.client.failover.proxy.provider.hdfs-cluster</name>
-        <value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value>
-      </property>
-
-      <!-- Automatic HA failover via ZooKeeper -->
-      <property>
-        <name>dfs.ha.automatic-failover.enabled</name>
-        <value>true</value>
-      </property>
-
-      <!-- Fencing: kill the standby SSH before promoting (use shell script in k8s) -->
-      <property>
-        <name>dfs.ha.fencing.methods</name>
-        <value>shell(/bin/true)</value>
-      </property>
-
-      <!-- Replication factor -->
-      <property>
-        <name>dfs.replication</name>
-        <value>3</value>
-      </property>
-
-      <!-- DataNode data directories -->
-      <property>
-        <name>dfs.datanode.data.dir</name>
-        <value>/hadoop/dfs/data</value>
-      </property>
-
-      <!-- NameNode metadata directories -->
-      <property>
-        <name>dfs.namenode.name.dir</name>
-        <value>/hadoop/dfs/name</value>
-      </property>
-
-      <!-- JournalNode edits directory -->
-      <property>
-        <name>dfs.journalnode.edits.dir</name>
-        <value>/hadoop/dfs/journal</value>
-      </property>
-
-      <!-- Block size: 128 MB -->
-      <property>
-        <name>dfs.blocksize</name>
-        <value>134217728</value>
-      </property>
+      <property><name>dfs.client.failover.proxy.provider.hdfs-cluster</name><value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value></property>
+      <property><name>dfs.ha.automatic-failover.enabled</name><value>true</value></property>
+      <property><name>dfs.ha.fencing.methods</name><value>shell(/bin/true)</value></property>
+      <property><name>dfs.replication</name><value>3</value></property>
+      <property><name>dfs.datanode.data.dir</name><value>/hadoop/dfs/data</value></property>
+      <property><name>dfs.namenode.name.dir</name><value>/hadoop/dfs/name</value></property>
+      <property><name>dfs.journalnode.edits.dir</name><value>/hadoop/dfs/journal</value></property>
+      <property><name>dfs.blocksize</name><value>134217728</value></property>
     </configuration>
 
-  # ── yarn-site.xml ────────────────────────────────────────────
   yarn-site.xml: |
     <?xml version="1.0" encoding="UTF-8"?>
-    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
     <configuration>
-      <!-- Enable HA for ResourceManager -->
-      <property>
-        <name>yarn.resourcemanager.ha.enabled</name>
-        <value>true</value>
-      </property>
-      <property>
-        <name>yarn.resourcemanager.cluster-id</name>
-        <value>yarn-cluster</value>
-      </property>
-      <property>
-        <name>yarn.resourcemanager.ha.rm-ids</name>
-        <value>rm0,rm1</value>
-      </property>
-
-      <!-- ResourceManager hostnames -->
-      <property>
-        <name>yarn.resourcemanager.hostname.rm0</name>
-        <value>yarn-resourcemanager-0.yarn-resourcemanager-headless.data-platform.svc.cluster.local</value>
-      </property>
-      <property>
-        <name>yarn.resourcemanager.hostname.rm1</name>
-        <value>yarn-resourcemanager-1.yarn-resourcemanager-headless.data-platform.svc.cluster.local</value>
-      </property>
-
-      <!-- ZooKeeper for RM HA -->
-      <property>
-        <name>yarn.resourcemanager.zk-address</name>
-        <value>zookeeper-0.zookeeper-headless:2181,zookeeper-1.zookeeper-headless:2181,zookeeper-2.zookeeper-headless:2181</value>
-      </property>
-
-      <!-- NodeManager auxiliary services -->
-      <property>
-        <name>yarn.nodemanager.aux-services</name>
-        <value>mapreduce_shuffle</value>
-      </property>
-      <property>
-        <name>yarn.nodemanager.aux-services.mapreduce_shuffle.class</name>
-        <value>org.apache.hadoop.mapred.ShuffleHandler</value>
-      </property>
-
-      <!-- Scheduler -->
-      <property>
-        <name>yarn.resourcemanager.scheduler.class</name>
-        <value>org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler</value>
-      </property>
-
-      <!-- NodeManager resources (overridden per overlay) -->
-      <property>
-        <name>yarn.nodemanager.resource.memory-mb</name>
-        <value>4096</value>
-      </property>
-      <property>
-        <name>yarn.nodemanager.resource.cpu-vcores</name>
-        <value>2</value>
-      </property>
-
-      <!-- Enable log aggregation to HDFS -->
-      <property>
-        <name>yarn.log-aggregation-enable</name>
-        <value>true</value>
-      </property>
-      <property>
-        <name>yarn.nodemanager.remote-app-log-dir</name>
-        <value>/yarn/logs</value>
-      </property>
-
-      <!-- History server -->
-      <property>
-        <name>yarn.log.server.url</name>
-        <value>http://yarn-historyserver:19888/jobhistory/logs</value>
-      </property>
+      <property><name>yarn.resourcemanager.ha.enabled</name><value>true</value></property>
+      <property><name>yarn.resourcemanager.cluster-id</name><value>yarn-cluster</value></property>
+      <property><name>yarn.resourcemanager.ha.rm-ids</name><value>rm0,rm1</value></property>
+      <property><name>yarn.resourcemanager.hostname.rm0</name><value>yarn-resourcemanager-0.yarn-resourcemanager-headless.data-platform.svc.cluster.local</value></property>
+      <property><name>yarn.resourcemanager.hostname.rm1</name><value>yarn-resourcemanager-1.yarn-resourcemanager-headless.data-platform.svc.cluster.local</value></property>
+      <property><name>yarn.resourcemanager.zk-address</name><value>zookeeper-0.zookeeper-headless:2181,zookeeper-1.zookeeper-headless:2181,zookeeper-2.zookeeper-headless:2181</value></property>
+      <property><name>yarn.nodemanager.aux-services</name><value>mapreduce_shuffle</value></property>
+      <property><name>yarn.nodemanager.aux-services.mapreduce_shuffle.class</name><value>org.apache.hadoop.mapred.ShuffleHandler</value></property>
+      <property><name>yarn.resourcemanager.scheduler.class</name><value>org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler</value></property>
+      <property><name>yarn.nodemanager.resource.memory-mb</name><value>4096</value></property>
+      <property><name>yarn.nodemanager.resource.cpu-vcores</name><value>2</value></property>
+      <property><name>yarn.log-aggregation-enable</name><value>true</value></property>
+      <property><name>yarn.nodemanager.remote-app-log-dir</name><value>/yarn/logs</value></property>
+      <property><name>yarn.log.server.url</name><value>http://yarn-historyserver:19888/jobhistory/logs</value></property>
     </configuration>
 
-  # ── mapred-site.xml ──────────────────────────────────────────
   mapred-site.xml: |
     <?xml version="1.0" encoding="UTF-8"?>
-    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
     <configuration>
-      <property>
-        <name>mapreduce.framework.name</name>
-        <value>yarn</value>
-      </property>
-      <property>
-        <name>mapreduce.jobhistory.address</name>
-        <value>yarn-historyserver:10020</value>
-      </property>
-      <property>
-        <name>mapreduce.jobhistory.webapp.address</name>
-        <value>yarn-historyserver:19888</value>
-      </property>
-      <!-- Map / Reduce container memory -->
-      <property>
-        <name>mapreduce.map.memory.mb</name>
-        <value>1024</value>
-      </property>
-      <property>
-        <name>mapreduce.reduce.memory.mb</name>
-        <value>2048</value>
-      </property>
-      <property>
-        <name>mapreduce.map.java.opts</name>
-        <value>-Xmx768m</value>
-      </property>
-      <property>
-        <name>mapreduce.reduce.java.opts</name>
-        <value>-Xmx1536m</value>
-      </property>
+      <property><name>mapreduce.framework.name</name><value>yarn</value></property>
+      <property><name>mapreduce.jobhistory.address</name><value>yarn-historyserver:10020</value></property>
+      <property><name>mapreduce.jobhistory.webapp.address</name><value>yarn-historyserver:19888</value></property>
+      <property><name>mapreduce.map.memory.mb</name><value>1024</value></property>
+      <property><name>mapreduce.reduce.memory.mb</name><value>2048</value></property>
+      <property><name>mapreduce.map.java.opts</name><value>-Xmx768m</value></property>
+      <property><name>mapreduce.reduce.java.opts</name><value>-Xmx1536m</value></property>
     </configuration>

@@ -1,7 +1,3 @@
-# ── Logstash — Deployment ─────────────────────────────────────
-# Image : logstash-oss-with-opensearch-output-plugin
-# = Logstash OSS (sans X-Pack) + plugin opensearch output officiel
-# Source : https://opensearch.org/docs/latest/tools/logstash/
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,7 +22,6 @@ spec:
     spec:
       containers:
         - name: logstash
-          # ← image OSS avec plugin opensearch, PAS l'image Elastic officielle
           image: opensearchproject/logstash-oss-with-opensearch-output-plugin:8.9.0
           imagePullPolicy: IfNotPresent
           ports:
@@ -48,7 +43,6 @@ spec:
           env:
             - name: LS_JAVA_OPTS
               value: "-Xms1g -Xmx1g"
-            # Mot de passe OpenSearch injecté depuis le Secret K8s
             - name: OPENSEARCH_PASSWORD
               valueFrom:
                 secretKeyRef:

@@ -1,13 +1,3 @@
-# ── Logstash — pipeline d'ingestion ───────────────────────────
-# Logstash EST toujours nécessaire dans la stack OpenSearch.
-# Il n't est PAS remplacé par OpenSearch — c'est l'outil d'ingestion.
-#
-# Image : logstash-oss-with-opensearch-output-plugin
-# (Logstash OSS + plugin officiel opensearch-output, sans X-Pack)
-#
-# Différence avec la stack ELK classique :
-#   output { elasticsearch {} }  →  output { opensearch {} }
-#   Le reste du pipeline (input, filter) est identique.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -16,30 +6,16 @@ metadata:
   labels:
     app: logstash
 data:
-  # ── logstash.yml ─────────────────────────────────────────────
   logstash.yml: |
     http.host: "0.0.0.0"
-
-    # Pas de monitoring X-Pack — OpenSearch monitore via son propre plugin
     xpack.monitoring.enabled: false
-
-    # Performance pipeline
     pipeline.workers: 4
     pipeline.batch.size: 500
     pipeline.batch.delay: 50
-
-    # Logs applicatif
     log.level: info
 
-  # ── pipeline/main.conf ───────────────────────────────────────
-  # Ce fichier définit : d'où viennent les données (input),
-  # comment les transformer (filter), et où les envoyer (output).
   main.conf: |
-    # ────────────────────────────────────────────────────────────
-    # INPUT — sources de données
-    # ────────────────────────────────────────────────────────────
     input {
-      # Logs applicatifs via TCP/UDP (JSON)
       tcp {
         port  => 5000
         codec => json_lines
@@ -50,81 +26,41 @@ data:
         codec => json_lines
         tags  => ["udp", "app-logs"]
       }
-
-      # Beats (Filebeat, Metricbeat, etc.)
       beats {
         port => 5044
         tags => ["beats"]
       }
-
-      # HTTP endpoint (webhooks, APIs externes)
       http {
-        port => 8080
+        port  => 8080
         codec => json
-        tags => ["http-input"]
+        tags  => ["http-input"]
       }
     }
 
-    # ────────────────────────────────────────────────────────────
-    # FILTER — enrichissement et normalisation
-    # ────────────────────────────────────────────────────────────
     filter {
-      # Normaliser le timestamp si présent dans le message
       if [timestamp] {
         date {
-          match  => ["timestamp", "ISO8601", "yyyy-MM-dd HH:mm:ss"]
-          target => "@timestamp"
+          match       => ["timestamp", "ISO8601", "yyyy-MM-dd HH:mm:ss"]
+          target      => "@timestamp"
           remove_field => ["timestamp"]
         }
       }
-
-      # Supprimer les messages vides
       if ![message] and ![log] {
         drop {}
       }
-
-      # Ajouter des métadonnées de pipeline
       mutate {
         add_field => {
           "pipeline_version" => "1.0"
-          "ingested_at"      => "%{@timestamp}"
-        }
-      }
-
-      # Parser les logs HTTP access (exemple)
-      if "http-input" in [tags] {
-        grok {
-          match => { "message" => "%{COMBINEDAPACHELOG}" }
-          tag_on_failure => ["_grok_failure"]
-        }
-        if [response] {
-          mutate {
-            convert => { "response" => "integer" }
-          }
         }
       }
     }
 
-    # ────────────────────────────────────────────────────────────
-    # OUTPUT — destination : OpenSearch (remplace elasticsearch {})
-    # ────────────────────────────────────────────────────────────
     output {
-      # Envoi vers OpenSearch via le plugin officiel opensearch-output
-      # Syntaxe identique à elasticsearch {}, seul le bloc change
       opensearch {
-        hosts       => ["http://opensearch:9200"]   # service coordinator K8s
+        hosts       => ["http://opensearch:9200"]
         user        => "admin"
-        password    => "${OPENSEARCH_PASSWORD}"      # injecté via Secret K8s
-        ssl_enabled => false                         # true + certificat en prod TLS
-
-        # Nom d'index dynamique par jour (identique à ELK)
-        index => "logs-%{[tags][0]}-%{+YYYY.MM.dd}"
-
-        # Template de mapping automatique
-        template_name  => "logstash"
-        template_overwrite => false
+        password    => "${OPENSEARCH_PASSWORD}"
+        ssl_enabled => false
+        index       => "logs-%{[tags][0]}-%{+YYYY.MM.dd}"
       }
-
-      # Debug local uniquement — à supprimer en production
-      # stdout { codec => rubydebug }
     }

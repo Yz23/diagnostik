@@ -1,5 +1,3 @@
-# ── HDFS DataNodes ────────────────────────────────────────────
-# Store actual file blocks. Replication=3 requires ≥3 DataNodes.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -40,9 +38,7 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              echo "Waiting for active NameNode..."
               until nc -z hdfs-namenode-0.hdfs-namenode-headless 8020; do sleep 5; done
-              echo "NameNode ready."
       containers:
         - name: datanode
           image: apache/hadoop:3.3.6
@@ -73,14 +69,13 @@ spec:
               cpu: "500m"
             limits:
               memory: "2Gi"
-              cpu: "1"
+              cpu: "1000m"
           readinessProbe:
             httpGet:
               path: /index.html
               port: 9864
             initialDelaySeconds: 45
             periodSeconds: 10
-            failureThreshold: 5
           livenessProbe:
             httpGet:
               path: /index.html

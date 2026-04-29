@@ -1,4 +1,3 @@
-# ── AWS EKS Module ─────────────────────────────────────────────
 terraform {
   required_providers {
     aws = {

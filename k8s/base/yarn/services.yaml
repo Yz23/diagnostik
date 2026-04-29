@@ -1,4 +1,3 @@
-# ResourceManager headless
 apiVersion: v1
 kind: Service
 metadata:
@@ -20,7 +19,6 @@ spec:
     - name: http
       port: 8088
 ---
-# ResourceManager ClusterIP (active RM receives traffic)
 apiVersion: v1
 kind: Service
 metadata:
@@ -45,7 +43,6 @@ spec:
       port: 8030
       targetPort: 8030
 ---
-# NodeManager (per-node, accessed by RM for heartbeats)
 apiVersion: v1
 kind: Service
 metadata:
@@ -66,7 +63,6 @@ spec:
     - name: http
       port: 8042
 ---
-# History Server
 apiVersion: v1
 kind: Service
 metadata:

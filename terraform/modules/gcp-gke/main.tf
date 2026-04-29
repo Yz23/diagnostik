@@ -1,4 +1,3 @@
-# ── GCP GKE Module ─────────────────────────────────────────────
 terraform {
   required_providers {
     google = {

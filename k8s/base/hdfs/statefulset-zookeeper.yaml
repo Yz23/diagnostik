@@ -1,5 +1,3 @@
-# ── ZooKeeper — required for HDFS HA + YARN HA ───────────────
-# 3 nodes mandatory for quorum (majority = 2/3)
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -39,10 +37,6 @@ spec:
             - name: election
               containerPort: 3888
           env:
-            - name: ZOO_MY_ID
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name   # zookeeper-0 → ID set via initContainer
             - name: ZOO_SERVERS
               value: "server.1=zookeeper-0.zookeeper-headless:2888:3888;2181 server.2=zookeeper-1.zookeeper-headless:2888:3888;2181 server.3=zookeeper-2.zookeeper-headless:2888:3888;2181"
             - name: ZOO_4LW_COMMANDS_WHITELIST
@@ -51,7 +45,6 @@ spec:
             - /bin/bash
             - -c
             - |
-              # Extract ordinal from pod name (zookeeper-0 → 1, zookeeper-1 → 2, ...)
               ORDINAL=$(echo $HOSTNAME | awk -F'-' '{print $NF}')
               export ZOO_MY_ID=$((ORDINAL + 1))
               /docker-entrypoint.sh zkServer.sh start-foreground

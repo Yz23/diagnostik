@@ -1,7 +1,3 @@
-# ── Azure deployment ───────────────────────────────────────────
-# az login
-# terraform -chdir=../modules/azure-aks apply -var-file=../../terraform/environments/example-azure.tfvars
-
 cluster_name       = "data-platform"
 location           = "westeurope"
 general_node_count = 2

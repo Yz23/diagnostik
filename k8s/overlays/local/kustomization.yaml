@@ -25,6 +25,9 @@ patches:
     target:
       kind: StatefulSet
       name: zookeeper
+
+commonLabels:
+  environment: local
   - path: patches/resources-small.yaml
     target:
       kind: StatefulSet
@@ -33,6 +36,3 @@ patches:
     target:
       kind: StatefulSet
       name: opensearch-data
-
-commonLabels:
-  environment: local

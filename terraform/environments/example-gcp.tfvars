@@ -1,7 +1,3 @@
-# ── GCP deployment ─────────────────────────────────────────────
-# terraform -chdir=../modules/gcp-gke init
-# terraform -chdir=../modules/gcp-gke apply -var-file=../../terraform/environments/example-gcp.tfvars
-
 project_id           = "infrastructure-resiliente"
 region               = "europe-west1"
 cluster_name         = "data-platform"

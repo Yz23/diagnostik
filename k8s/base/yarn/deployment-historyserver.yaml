@@ -1,5 +1,3 @@
-# ── YARN History Server ───────────────────────────────────────
-# Stores completed job logs on HDFS. Single instance is sufficient.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -29,7 +27,7 @@ spec:
               cp /hadoop-config/core-site.xml   $HADOOP_CONF_DIR/core-site.xml
               cp /hadoop-config/hdfs-site.xml   $HADOOP_CONF_DIR/hdfs-site.xml
               cp /hadoop-config/yarn-site.xml   $HADOOP_CONF_DIR/yarn-site.xml
-              cp /hadoop-config/mapred-site.xml  $HADOOP_CONF_DIR/mapred-site.xml
+              cp /hadoop-config/mapred-site.xml $HADOOP_CONF_DIR/mapred-site.xml
               mapred historyserver
           ports:
             - name: rpc

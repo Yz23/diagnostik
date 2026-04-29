@@ -77,6 +77,16 @@ spec:
                   value: "Basic YWRtaW46YWRtaW4="
             initialDelaySeconds: 60
             periodSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /_cluster/health
+              port: 9200
+              httpHeaders:
+                - name: Authorization
+                  value: "Basic YWRtaW46YWRtaW4="
+            initialDelaySeconds: 90
+            periodSeconds: 30
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000

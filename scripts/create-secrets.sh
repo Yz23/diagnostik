@@ -10,4 +10,4 @@ kubectl apply -f k8s/base/namespace/namespace.yaml
 kubectl -n "$NS" create secret generic opensearch-credentials \
   --from-literal=OPENSEARCH_INITIAL_ADMIN_PASSWORD="${OPENSEARCH_INITIAL_ADMIN_PASSWORD}" \
   --dry-run=client -o yaml | kubectl apply -f -
-echo "✓ Secret created."
+echo "Secret created in namespace $NS"

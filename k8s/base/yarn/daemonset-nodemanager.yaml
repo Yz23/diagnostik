@@ -1,6 +1,3 @@
-# ── YARN NodeManagers ─────────────────────────────────────────
-# DaemonSet: one NodeManager per Kubernetes node labelled
-# role=hadoop-data — collocated with HDFS DataNodes for data locality.
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -25,7 +22,7 @@ spec:
         role: nodemanager
     spec:
       nodeSelector:
-        role: hadoop-data      # only schedule on data-labelled nodes
+        role: hadoop-data
       tolerations:
         - key: dedicated
           value: hadoop-data
@@ -36,9 +33,7 @@ spec:
           command: ["/bin/sh", "-c"]
           args:
             - |
-              until nc -z yarn-resourcemanager 8032; do
-                echo "Waiting for ResourceManager..."; sleep 5
-              done
+              until nc -z yarn-resourcemanager 8032; do sleep 5; done
       containers:
         - name: nodemanager
           image: apache/hadoop:3.3.6
@@ -48,7 +43,7 @@ spec:
               cp /hadoop-config/core-site.xml   $HADOOP_CONF_DIR/core-site.xml
               cp /hadoop-config/hdfs-site.xml   $HADOOP_CONF_DIR/hdfs-site.xml
               cp /hadoop-config/yarn-site.xml   $HADOOP_CONF_DIR/yarn-site.xml
-              cp /hadoop-config/mapred-site.xml  $HADOOP_CONF_DIR/mapred-site.xml
+              cp /hadoop-config/mapred-site.xml $HADOOP_CONF_DIR/mapred-site.xml
               yarn nodemanager
           ports:
             - name: localizer
@@ -69,7 +64,7 @@ spec:
               cpu: "500m"
             limits:
               memory: "4Gi"
-              cpu: "2"
+              cpu: "2000m"
           readinessProbe:
             httpGet:
               path: /node

@@ -1,4 +1,3 @@
-# ── Azure AKS Module ──────────────────────────────────────────
 terraform {
   required_providers {
     azurerm = {
