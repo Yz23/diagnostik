@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [master, main]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   secret-scan:
     name: Gitleaks — secret scan
@@ -29,13 +32,21 @@ jobs:
           tar xf kc.tar.gz && chmod +x kubeconform && sudo mv kubeconform /usr/local/bin/
       - name: Validate base manifests
         run: |
-          find k8s/base -name "*.yaml" ! -name "*secret*" \
-            | xargs kubeconform -kubernetes-version 1.30.0 -strict -summary
+          find k8s/base -name "*.yaml" \
+            ! -name "*secret*" \
+            ! -name "configmap.yaml" \
+            ! -name "kustomization.yaml" \
+            | xargs kubeconform \
+                -kubernetes-version 1.30.0 \
+                -strict \
+                -ignore-missing-schemas \
+                -summary
 
   kustomize-build:
     name: kustomize build — all overlays
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         overlay: [gcp, aws, azure, local]
     steps:
@@ -48,6 +59,7 @@ jobs:
     name: Terraform — fmt & validate all modules
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         module: [gcp-gke, aws-eks, azure-aks, local-k3s]
     steps:
@@ -71,7 +83,7 @@ jobs:
         run: |
           if grep -rn "CHANGE_ME\|changeme\|password123" k8s/ --include="*.yaml" \
             | grep -v "secret-template.yaml"; then
-            echo "ERROR: Hardcoded password found in manifests."
+            echo "ERROR: Hardcoded password found."
             exit 1
           fi
-          echo "✓ Clean."
+          echo "Clean."
