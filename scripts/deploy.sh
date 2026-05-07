@@ -70,7 +70,9 @@ fi
 
 # ── [5] Deploy overlay kustomize ───────────────────────────────────────────────
 log_step "[5/8] Application overlay kustomize : ${PROVIDER}..."
-kubectl kustomize "${OVERLAY}" | kubectl apply -f -
+# Utiliser le binaire kustomize (pas kubectl kustomize) pour supporter
+# --load-restrictor : kubectl kustomize ne supporte pas ce flag.
+kustomize build --load-restrictor LoadRestrictionsNone "${OVERLAY}" | kubectl apply -f -
 
 # ── [6-8] Attente des workloads (DRY-3 — factorisation wait_rollout) ──────────
 log_step "[6/8] Attente des dépendances HDFS..."

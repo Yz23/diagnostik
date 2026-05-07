@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ══════════════════════════════════════════════════════════════════════════════
-# scripts/lib/common.sh — bibliothèque partagée infrastructure-resiliente
+# scripts/lib/common.sh — bibliothèque partagée diagnostix
 # ══════════════════════════════════════════════════════════════════════════════
 # Source unique de vérité pour :
 #   - Liste et mapping des providers (DRY-1)
@@ -72,7 +72,7 @@ ensure_repo_root() {
   if [[ ! -f "Makefile" ]] || [[ ! -d "scripts" ]]; then
     echo "ERREUR : ce script doit être exécuté depuis la racine du projet."
     echo "  Répertoire courant : $(pwd)"
-    echo "  Exemple : cd /path/to/infrastructure-resiliente && bash scripts/${BASH_SOURCE[1]##*/}"
+    echo "  Exemple : cd /path/to/diagnostix && bash scripts/${BASH_SOURCE[1]##*/}"
     exit 1
   fi
 }

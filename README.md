@@ -2,13 +2,13 @@
 
 <br/>
 
-# infrastructure-resiliente
+# diagnostix
 
-### Production-grade Data Platform · Built for large-scale AI data collection & training pipelines
+### Open Platform Data · IA Agnostic · Production-grade infrastructure for large-scale AI data collection & training pipelines
 
 <br/>
 
-[![CI](https://github.com/Yz23/infrastructure-resiliente/actions/workflows/ci.yml/badge.svg)](https://github.com/Yz23/infrastructure-resiliente/actions/workflows/ci.yml)
+[![CI](https://github.com/Yz23/diagnostix/actions/workflows/ci.yml/badge.svg)](https://github.com/Yz23/diagnostix/actions/workflows/ci.yml)
 &nbsp;
 ![OpenSearch](https://img.shields.io/badge/OpenSearch-2.17.0-005EB8?logo=opensearch&logoColor=white)
 &nbsp;
@@ -54,7 +54,7 @@ make help                          # toutes les commandes disponibles
 
 ## Purpose
 
-This repository provisions the **infrastructure layer** of a multimodal AI search engine — designed to collect, store, process and index large volumes of data at scale.
+**Diagnostix** is an open, IA-agnostic data platform — designed to collect, store, process and index large volumes of data at scale for any AI workload. No vendor lock-in. Runs on GCP, AWS, Azure, or bare-metal Proxmox.
 
 The platform is built around three core concerns:
 
@@ -434,7 +434,7 @@ Every push and pull request triggers:
 
 ## Roadmap
 
-This repo covers the infrastructure layer. The next phases:
+Diagnostix covers the infrastructure layer. The next phases:
 
 - [ ] Ingestion layer — pluggable scrapers (Scrapy / Playwright) writing to HDFS via Logstash
 - [ ] Processing layer — Apache Spark jobs on YARN for cleaning, deduplication, embedding

@@ -1,4 +1,4 @@
-project_id           = "infrastructure-resiliente"
+project_id           = "diagnostix"   # ← remplacer par ton project_id GCP réel
 region               = "europe-west1"
 cluster_name         = "data-platform"
 general_node_count   = 2

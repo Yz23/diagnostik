@@ -167,7 +167,7 @@ lint:
 	  ! -name "cluster-issuer*" \
 	  | xargs kubeconform -kubernetes-version 1.30.0 -strict -ignore-missing-schemas -summary
 	@for ov in gcp aws azure local; do \
-	  kustomize build k8s/overlays/$$ov > /dev/null && echo "  overlay $$ov ✓"; \
+	  kustomize build --load-restrictor LoadRestrictionsNone k8s/overlays/$$ov > /dev/null && echo "  overlay $$ov ✓"; \
 	done
 
 # ── Vérification des prérequis ────────────────────────────────────────────────
@@ -211,7 +211,7 @@ status:
 
 help:
 	@echo ""
-	@echo "  infrastructure-resiliente"
+	@echo "  diagnostix"
 	@echo ""
 	@echo "  Dev local (Docker, sans Kubernetes)"
 	@echo "    make dev                      Démarrer la stack"
