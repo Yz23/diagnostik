@@ -1,6 +1,42 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+# ── Versions images — source de vérité pour K8s ───────────────────────────────
+# Modifier ici pour upgrader toutes les images en une seule opération.
+# Équivalent K8s du bloc "versions" dans .env.example pour Docker.
+images:
+  - name: opensearchproject/opensearch
+    newTag: "2.17.0"
+  - name: opensearchproject/opensearch-dashboards
+    newTag: "2.17.0"
+  - name: opensearchproject/logstash-oss-with-opensearch-output-plugin
+    newTag: "8.9.0"
+  - name: apache/hadoop
+    newTag: "3.3.6"
+  - name: busybox
+    newTag: "1.36"
+  - name: zookeeper
+    newTag: "3.9"
+
+# ── ConfigMaps générés depuis config/ — source de vérité unique ───────────────
+# Ces ConfigMaps remplacent les anciens fichiers configmap.yaml inline de logstash.
+# Modifier config/logstash/*.  → répercuté automatiquement en K8s ET en Docker.
+configMapGenerator:
+  - name: logstash-config
+    files:
+      - logstash.yml=../../config/logstash/logstash.yml
+      - main.conf=../../config/logstash/pipeline.conf
+    options:
+      disableNameSuffixHash: true
+  # FIX NOUVEAU BUG 2 : génère le ConfigMap hdfs-fence-script depuis le script source
+  # Garantit que ConfigMap et scripts/fence-namenode.sh sont toujours synchrones
+  - name: hdfs-fence-script
+    files:
+      - fence-namenode.sh=../../scripts/fence-namenode.sh
+    options:
+      disableNameSuffixHash: true
+
+# ── Ressources ─────────────────────────────────────────────────────────────────
 resources:
   - namespace/namespace.yaml
   - opensearch/configmap.yaml
@@ -13,7 +49,7 @@ resources:
   - opensearch-dashboards/configmap.yaml
   - opensearch-dashboards/deployment.yaml
   - opensearch-dashboards/service.yaml
-  - logstash/configmap.yaml
+  # logstash/configmap.yaml SUPPRIMÉ : généré par configMapGenerator ci-dessus
   - logstash/deployment.yaml
   - logstash/service.yaml
   - hdfs/configmap.yaml
@@ -27,3 +63,7 @@ resources:
   - yarn/deployment-historyserver.yaml
   - yarn/services.yaml
   - ingress/ingress.yaml
+  - network-policies/network-policies.yaml
+  - rbac/serviceaccounts.yaml
+  - rbac/roles.yaml
+  - quotas/resource-quota.yaml

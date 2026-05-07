@@ -1,0 +1,213 @@
+# ── Stack de développement local ──────────────────────────────────────────────
+# Reproduit la stack de prod en single-node. Pas de Kubernetes requis.
+#
+# Usage :
+#   cp .env.example .env          # puis éditer OPENSEARCH_INITIAL_ADMIN_PASSWORD
+#   make dev                      # OU : docker compose -f docker/docker-compose.yml up -d
+#
+# UIs :
+#   OpenSearch Dashboards → http://localhost:5601
+#   OpenSearch API        → http://localhost:9200
+#   HDFS NameNode UI      → http://localhost:9870
+#   YARN ResourceManager  → http://localhost:8088
+#
+# ARCHITECTURE :
+#   Les fichiers de configuration sont montés depuis ../config/ (source de vérité unique).
+#   Les mêmes fichiers sont utilisés par Kubernetes via kustomize configMapGenerator.
+#   → une seule modification dans config/ se propage aux deux environnements.
+# ──────────────────────────────────────────────────────────────────────────────
+
+x-opensearch-env: &opensearch-env
+  cluster.name: opensearch-dev
+  discovery.type: single-node
+  OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+  OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${OPENSEARCH_INITIAL_ADMIN_PASSWORD:?Copier .env.example → .env et définir OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+  plugins.security.disabled: "false"
+  plugins.security.allow_unsafe_democertificates: "true"
+  plugins.security.allow_default_init_securityindex: "true"
+
+services:
+
+  # ── OpenSearch (single-node dev) ────────────────────────────────────────────
+  opensearch:
+    image: opensearchproject/opensearch:${OPENSEARCH_VERSION:-2.17.0}
+    container_name: opensearch-dev
+    environment:
+      <<: *opensearch-env
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile:  { soft: 65536, hard: 65536 }
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    ports:
+      - "127.0.0.1:9200:9200"
+      - "127.0.0.1:9600:9600"
+    networks: [data-platform]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs -u admin:$$OPENSEARCH_INITIAL_ADMIN_PASSWORD http://localhost:9200/_cluster/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ── OpenSearch Dashboards ────────────────────────────────────────────────────
+  dashboards:
+    image: opensearchproject/opensearch-dashboards:${OPENSEARCH_VERSION:-2.17.0}
+    container_name: dashboards-dev
+    environment:
+      OPENSEARCH_HOSTS: '["http://opensearch:9200"]'
+      OPENSEARCH_USERNAME: admin
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+      DISABLE_SECURITY_DASHBOARDS_PLUGIN: "false"
+    ports:
+      - "127.0.0.1:5601:5601"
+    networks: [data-platform]
+    depends_on:
+      opensearch: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:5601/api/status || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  # ── Logstash ─────────────────────────────────────────────────────────────────
+  # CONFIG montée depuis ../config/logstash/ — source de vérité unique
+  # Les mêmes fichiers alimentent le ConfigMap K8s via kustomize.
+  logstash:
+    image: opensearchproject/logstash-oss-with-opensearch-output-plugin:${LOGSTASH_VERSION:-8.9.0}
+    container_name: logstash-dev
+    environment:
+      LS_JAVA_OPTS: "-Xms512m -Xmx512m"
+      OPENSEARCH_PASSWORD: ${OPENSEARCH_INITIAL_ADMIN_PASSWORD}
+      # Dev : pas de TLS vers OpenSearch (single-node demo-certs)
+      OPENSEARCH_HOST: "http://opensearch:9200"
+      LS_SSL_ENABLED: "false"
+      LS_SSL_VERIFY:  "false"
+    volumes:
+      # SOURCE DE VÉRITÉ : montés depuis config/ (partagé avec K8s)
+      - ../config/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ../config/logstash/pipeline.conf:/usr/share/logstash/pipeline/main.conf:ro
+    ports:
+      - "127.0.0.1:5000:5000/tcp"
+      - "127.0.0.1:5000:5000/udp"
+      - "127.0.0.1:5044:5044"
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:9601:9600"
+    networks: [data-platform]
+    depends_on:
+      opensearch: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9600 || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ── HDFS NameNode (dev, single-node) ─────────────────────────────────────────
+  # CONFIG montée depuis ../config/hadoop/ — source de vérité unique
+  hdfs-namenode:
+    image: apache/hadoop:${HADOOP_VERSION:-3.3.6}
+    container_name: hdfs-namenode-dev
+    command:
+      - /bin/bash
+      - -c
+      - |
+        if [ ! -d /hadoop/dfs/name/current ]; then
+          hdfs namenode -format -nonInteractive -force
+        fi
+        hdfs namenode
+    environment:
+      HADOOP_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - ../config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+      - ../config/hadoop/hdfs-site-dev.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+      - hdfs-name:/hadoop/dfs/name
+    ports:
+      - "127.0.0.1:9870:9870"
+      - "127.0.0.1:8020:8020"
+    networks: [data-platform]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9870 || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ── HDFS DataNode ─────────────────────────────────────────────────────────────
+  hdfs-datanode:
+    image: apache/hadoop:${HADOOP_VERSION:-3.3.6}
+    container_name: hdfs-datanode-dev
+    command: ["hdfs", "datanode"]
+    environment:
+      HADOOP_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - ../config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+      - ../config/hadoop/hdfs-site-dev.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+      - hdfs-data:/hadoop/dfs/data
+    ports:
+      - "127.0.0.1:9864:9864"
+    networks: [data-platform]
+    depends_on:
+      hdfs-namenode: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:9864 || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ── YARN ResourceManager ──────────────────────────────────────────────────────
+  yarn-resourcemanager:
+    image: apache/hadoop:${HADOOP_VERSION:-3.3.6}
+    container_name: yarn-rm-dev
+    command: ["yarn", "resourcemanager"]
+    environment:
+      YARN_RESOURCEMANAGER_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - ../config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+      - ../config/hadoop/hdfs-site-dev.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+      - ../config/hadoop/yarn-site-dev.xml:/opt/hadoop/etc/hadoop/yarn-site.xml:ro
+      - ../config/hadoop/mapred-site.xml:/opt/hadoop/etc/hadoop/mapred-site.xml:ro
+    ports:
+      - "127.0.0.1:8088:8088"
+    networks: [data-platform]
+    depends_on:
+      hdfs-namenode: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8088/ws/v1/cluster/info || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # ── YARN NodeManager ──────────────────────────────────────────────────────────
+  yarn-nodemanager:
+    image: apache/hadoop:${HADOOP_VERSION:-3.3.6}
+    container_name: yarn-nm-dev
+    command: ["yarn", "nodemanager"]
+    environment:
+      YARN_NODEMANAGER_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - ../config/hadoop/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+      - ../config/hadoop/hdfs-site-dev.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+      - ../config/hadoop/yarn-site-dev.xml:/opt/hadoop/etc/hadoop/yarn-site.xml:ro
+      - ../config/hadoop/mapred-site.xml:/opt/hadoop/etc/hadoop/mapred-site.xml:ro
+    networks: [data-platform]
+    depends_on:
+      yarn-resourcemanager: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8042/node || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+networks:
+  data-platform:
+    driver: bridge
+
+volumes:
+  opensearch-data:
+  hdfs-name:
+  hdfs-data:

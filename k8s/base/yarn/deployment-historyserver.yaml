@@ -18,6 +18,11 @@ spec:
         app: yarn
         role: historyserver
     spec:
+      serviceAccountName: hadoop
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - name: historyserver
           image: apache/hadoop:3.3.6
@@ -34,6 +39,13 @@ spec:
               containerPort: 10020
             - name: http
               containerPort: 19888
+          volumeMounts:
+            - name: hadoop-config
+              mountPath: /hadoop-config
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           resources:
             requests:
               memory: "1Gi"

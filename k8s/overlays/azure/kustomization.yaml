@@ -25,3 +25,8 @@ patches:
     target:
       kind: StatefulSet
       name: zookeeper
+
+  # ── Domaine Ingress — généré par scripts/configure-domain.sh ─────────────────
+  # Le fichier patches/ingress-domain.yaml est gitignore (spécifique au déploiement).
+  # Générer avec : bash scripts/configure-domain.sh azure <domain> [email]
+  # Sans ce patch, les Ingress conservent REPLACE_WITH_YOUR_DOMAIN (non fonctionnel).

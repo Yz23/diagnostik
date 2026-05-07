@@ -1,0 +1,9 @@
+# ── AWS remote state backend — S3 + DynamoDB lock ────────────────────────────
+# Copier en aws.tfbackend et remplir les valeurs réelles.
+# Créer le bucket avec : bash scripts/bootstrap-backend.sh aws
+# Ce fichier est gitignore après remplissage.
+bucket         = "VOTRE-ACCOUNT-ID-tf-state-dp"
+key            = "data-platform/aws/terraform.tfstate"
+region         = "eu-west-1"
+dynamodb_table = "tf-state-lock"
+encrypt        = true

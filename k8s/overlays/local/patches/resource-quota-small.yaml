@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: data-platform-quota
+  namespace: data-platform
+spec:
+  hard:
+    pods:                   "30"
+    requests.cpu:           "6"
+    limits.cpu:             "12"
+    requests.memory:        "12Gi"
+    limits.memory:          "16Gi"
+    persistentvolumeclaims: "20"
+    requests.storage:       "200Gi"
+    services:               "20"
+    configmaps:             "30"
+    secrets:                "20"

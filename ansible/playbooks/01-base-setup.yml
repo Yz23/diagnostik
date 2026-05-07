@@ -1,0 +1,7 @@
+---
+- name: Base system setup (all nodes)
+  hosts: all
+  become: true
+  roles:
+    - common
+    - containerd

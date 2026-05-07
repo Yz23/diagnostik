@@ -1,0 +1,74 @@
+# Template de patch domaine Ingress pour l'overlay azure.
+# Ne pas modifier manuellement. Généré par :
+#   bash scripts/configure-domain.sh azure mycompany.com ops@mycompany.com
+#
+# Le fichier ingress-domain.yaml (sans .example) est gitignore.
+
+# ── OpenSearch Dashboards ────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: opensearch-dashboards-ingress
+  namespace: data-platform
+spec:
+  tls:
+    - hosts:
+        - dashboards.YOUR-DOMAIN.com
+      secretName: dashboards-tls-cert
+  rules:
+    - host: dashboards.YOUR-DOMAIN.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: opensearch-dashboards
+                port:
+                  number: 5601
+---
+# ── YARN ResourceManager UI ──────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: yarn-ui-ingress
+  namespace: data-platform
+spec:
+  tls:
+    - hosts:
+        - yarn.YOUR-DOMAIN.com
+      secretName: yarn-tls-cert
+  rules:
+    - host: yarn.YOUR-DOMAIN.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: yarn-resourcemanager
+                port:
+                  number: 8088
+---
+# ── HDFS NameNode UI ─────────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hdfs-ui-ingress
+  namespace: data-platform
+spec:
+  tls:
+    - hosts:
+        - hdfs.YOUR-DOMAIN.com
+      secretName: hdfs-tls-cert
+  rules:
+    - host: hdfs.YOUR-DOMAIN.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hdfs-namenode
+                port:
+                  number: 9870

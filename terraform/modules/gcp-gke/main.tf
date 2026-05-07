@@ -1,10 +1,18 @@
 terraform {
+  required_version = ">= 1.7, < 2.0"
   required_providers {
     google = {
       source  = "hashicorp/google"
       version = "~> 5.0"
     }
   }
+  # ── Remote state — partial backend configuration ──────────────────────────
+  # Activer avec : bash scripts/bootstrap-backend.sh gcp
+  # Le fichier terraform/backends/gcs.tfbackend est généré par le script.
+  # Passé via : terraform init -backend-config=../../terraform/backends/gcs.tfbackend
+  #
+  # Bloc vide = Terraform accepte -backend-config dynamique sans modifier ce fichier.
+  backend "gcs" {}
 }
 
 resource "google_compute_network" "vpc" {
@@ -49,8 +57,12 @@ resource "google_container_cluster" "primary" {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
 
+  deletion_protection = true
   release_channel {
     channel = "REGULAR"
+  }
+  lifecycle {
+    ignore_changes = [initial_node_count]
   }
 }
 

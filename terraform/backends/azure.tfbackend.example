@@ -1,0 +1,8 @@
+# ── Azure remote state backend — Azure Blob Storage ──────────────────────────
+# Copier en azure.tfbackend et remplir les valeurs réelles.
+# Créer le storage avec : bash scripts/bootstrap-backend.sh azure
+# Ce fichier est gitignore après remplissage.
+resource_group_name  = "rg-tfstate"
+storage_account_name = "VOTRECOMPTETFSTATE"
+container_name       = "tfstate"
+key                  = "data-platform/azure/terraform.tfstate"

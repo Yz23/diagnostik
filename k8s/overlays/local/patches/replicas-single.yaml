@@ -1,0 +1,8 @@
+# Réduit tous les StatefulSets multi-replicas à 1 pour k3s single-node.
+# Sans ce patch : 3 masters OS + 3 ZK + 2 NameNodes + 3 JournalNodes = OOM garanti.
+# Ce fichier est appliqué UNIQUEMENT par l'overlay local/ — pas sur cloud.
+
+# OpenSearch master : 3 → 1  (discovery.type=single-node dans le configmap)
+- op: replace
+  path: /spec/replicas
+  value: 1

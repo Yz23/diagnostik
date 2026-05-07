@@ -1,0 +1,5 @@
+---
+# Nœuds data : plus de RAM/CPU, disques larges
+# Ces variables surchargent all.yml pour le groupe data_nodes
+node_role: hadoop-data
+apply_data_taint: true

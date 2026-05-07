@@ -27,8 +27,18 @@ spec:
         - key: dedicated
           value: hadoop-data
           effect: NoSchedule
+      serviceAccountName: hadoop
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       initContainers:
         - name: wait-for-resourcemanager
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65534  # nobody
           image: busybox:1.36
           command: ["/bin/sh", "-c"]
           args:
@@ -58,6 +68,10 @@ spec:
           volumeMounts:
             - name: hadoop-config
               mountPath: /hadoop-config
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           resources:
             requests:
               memory: "2Gi"

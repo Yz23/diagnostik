@@ -1,0 +1,160 @@
+# Roles RBAC minimaux — chaque composant ne peut faire que ce dont il a besoin.
+# Principe : aucune permission cluster-admin, aucun accès aux secrets d'autres composants.
+
+# ── OpenSearch : lecture de ses propres ConfigMaps et Secrets ─────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: opensearch
+  namespace: data-platform
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["opensearch-config"]
+    verbs: ["get", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["opensearch-credentials", "opensearch-tls-certs"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: opensearch
+  namespace: data-platform
+subjects:
+  - kind: ServiceAccount
+    name: opensearch
+    namespace: data-platform
+roleRef:
+  kind: Role
+  name: opensearch
+  apiGroup: rbac.authorization.k8s.io
+---
+# ── Logstash : lecture de sa config + Secret credentials ─────────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: logstash
+  namespace: data-platform
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["logstash-config"]
+    verbs: ["get", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["opensearch-credentials", "opensearch-tls-certs"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: logstash
+  namespace: data-platform
+subjects:
+  - kind: ServiceAccount
+    name: logstash
+    namespace: data-platform
+roleRef:
+  kind: Role
+  name: logstash
+  apiGroup: rbac.authorization.k8s.io
+---
+# ── Hadoop (HDFS + YARN) : lecture ConfigMap + Secrets ───────────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: hadoop
+  namespace: data-platform
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["hadoop-config"]
+    verbs: ["get", "watch"]
+  # NOTE : accès pods retiré — les composants Hadoop n'ont pas besoin
+  #         de lister les pods pour fonctionner. Réactiver si un composant
+  #         spécifique le nécessite avec resourceNames restriction.
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hadoop
+  namespace: data-platform
+subjects:
+  - kind: ServiceAccount
+    name: hadoop
+    namespace: data-platform
+roleRef:
+  kind: Role
+  name: hadoop
+  apiGroup: rbac.authorization.k8s.io
+---
+# ── OpenSearch Dashboards ─────────────────────────────────────────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: opensearch-dashboards
+  namespace: data-platform
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["opensearch-dashboards-config"]
+    verbs: ["get", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["opensearch-credentials", "opensearch-tls-certs"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: opensearch-dashboards
+  namespace: data-platform
+subjects:
+  - kind: ServiceAccount
+    name: opensearch-dashboards
+    namespace: data-platform
+roleRef:
+  kind: Role
+  name: opensearch-dashboards
+  apiGroup: rbac.authorization.k8s.io
+---
+# ── HDFS NameNode : fencing K8s-natif ────────────────────────────────────────
+# Permission minimale pour exécuter le fencing : supprimer les pods NameNode.
+# Seul le SA hdfs-namenode reçoit ce rôle (pas le SA hadoop générique).
+#
+# Sécurité : ce rôle permet de supprimer N'IMPORTE quel pod dans le namespace.
+# C'est le minimum requis car K8s RBAC ne supporte pas de filtre par labelSelector
+# dans les rules.resourceNames pour les ressources créées dynamiquement.
+# Mitigation : le script fence-namenode.sh ne supprime que les pods hdfs-namenode-N.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: hdfs-namenode-fencer
+  namespace: data-platform
+rules:
+  # get/list pour vérifier l'existence, delete pour le fencing
+  # (fusionné en une règle — principe RBAC : regrouper les verbes par ressource)
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "delete"]
+  # Lire sa propre config
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["hadoop-config", "hdfs-fence-script"]
+    verbs: ["get", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: hdfs-namenode-fencer
+  namespace: data-platform
+subjects:
+  - kind: ServiceAccount
+    name: hdfs-namenode
+    namespace: data-platform
+roleRef:
+  kind: Role
+  name: hdfs-namenode-fencer
+  apiGroup: rbac.authorization.k8s.io

@@ -2,13 +2,13 @@
 
 <br/>
 
-# 🔍 infrastructure-resiliente
+# diagnostix
 
-### Production-grade Data Platform on Kubernetes
+### Open Platform Data · IA Agnostic · Production-grade infrastructure for large-scale AI data collection & training pipelines
 
 <br/>
 
-[![CI](https://github.com/Yz23/infrastructure-resiliente/actions/workflows/ci.yml/badge.svg)](https://github.com/Yz23/infrastructure-resiliente/actions/workflows/ci.yml)
+[![CI](https://github.com/Yz23/diagnostix/actions/workflows/ci.yml/badge.svg)](https://github.com/Yz23/diagnostix/actions/workflows/ci.yml)
 &nbsp;
 ![OpenSearch](https://img.shields.io/badge/OpenSearch-2.17.0-005EB8?logo=opensearch&logoColor=white)
 &nbsp;
@@ -18,13 +18,17 @@
 &nbsp;
 ![Terraform](https://img.shields.io/badge/Terraform-1.7-7B42BC?logo=terraform&logoColor=white)
 &nbsp;
+![Ansible](https://img.shields.io/badge/Ansible-2.16-EE0000?logo=ansible&logoColor=white)
+&nbsp;
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+&nbsp;
 ![License](https://img.shields.io/badge/license-Apache%202.0-22C55E?logo=apache)
 
 <br/>
 
-**Multi-cloud · Multi-provider · No X-Pack license required**
+**Multi-cloud · Multi-provider · No X-Pack license · Production-hardened**
 
-[Getting Started](#-getting-started) · [Architecture](#-architecture) · [Documentation](#-documentation) · [CI/CD](#-cicd) · [Security](#-security)
+[Purpose](#purpose) · [Architecture](#architecture) · [Getting Started](#getting-started) · [Local Dev](#local-dev-docker) · [Providers](#multi-provider-support) · [CI/CD](#cicd) · [Security](#security) · [Docs](#documentation)
 
 <br/>
 
@@ -32,138 +36,192 @@
 
 ---
 
-## ✨ What is this?
 
-A complete, production-ready data platform deployable on any Kubernetes cluster — GCP, AWS, Azure, or a local Proxmox homelab — **with a single command**.
+## Quick Start
 
-| Component | Role | Replaces |
-|---|---|---|
-| **OpenSearch** | Distributed search & analytics engine | Elasticsearch + X-Pack *(paid)* |
-| **OpenSearch Dashboards** | Visualization UI · port `5601` | Kibana + X-Pack *(paid)* |
-| **Logstash** | Data ingestion pipeline | — *(kept, same config)* |
-| **HDFS HA** | Distributed block storage across nodes | — |
-| **YARN HA** | Cluster resource & job scheduling | — |
+```bash
+cp .env.example .env               # définir OPENSEARCH_INITIAL_ADMIN_PASSWORD
+make setup                         # restaurer +x sur les scripts (1 fois après clone)
+make dev                           # démarrer la stack locale (Docker Compose)
+make deploy PROVIDER=gcp           # déployer en production (Terraform + Ansible + kubectl)
+make validate                      # lint manifests K8s + kustomize + terraform fmt
+make help                          # toutes les commandes disponibles
+```
 
-> **Why OpenSearch over Elasticsearch?**
-> OpenSearch is a fork of Elasticsearch 7.10 (Apache 2.0). Security features — auth, TLS, RBAC, multi-tenancy, alerting — are **built-in and completely free**. No X-Pack subscription needed.
+> **Dev local (sans Kubernetes)** — `make dev` démarre la stack complète (OpenSearch, Logstash, HDFS, YARN) via Docker Compose. Les configs sont montées depuis `config/` — la même source de vérité que Kubernetes.
 
 ---
 
-## 🏗 Architecture
+## Purpose
+
+**Diagnostix** is an open, IA-agnostic data platform — designed to collect, store, process and index large volumes of data at scale for any AI workload. No vendor lock-in. Runs on GCP, AWS, Azure, or bare-metal Proxmox.
+
+The platform is built around three core concerns:
+
+| Concern | Answer |
+|---|---|
+| **Collect** at scale | Logstash ingestion pipeline · HDFS distributed storage |
+| **Process** at scale | YARN resource management · Hadoop-native compute |
+| **Search & index** | OpenSearch cluster · Dashboards UI |
+
+> **Current phase — Infrastructure only.** The application layer (scrapers, ML training jobs, model serving) is not yet deployed. This repo establishes the foundation that will support it.
+
+---
+
+## Architecture
 
 ```
-                    ┌──────────────────────────────────────────────────┐
+                    ┌─────────────────────────────────────────────────┐
   Internet          │              namespace: data-platform            │
      │              │                                                  │
      ▼              │  ┌──────────────────── Search ────────────────┐  │
-  Ingress (nginx)   │  │  opensearch-master       ×3  [StatefulSet] │  │
-     │              │  │  opensearch-data         ×3  [StatefulSet] │  │
-     ▼              │  │  opensearch-coordinator  ×2  [Deployment]  │  │
-  Dashboards :5601  │  │  opensearch-dashboards   ×2  [Deployment]  │  │
+  Ingress (nginx)   │  │  opensearch-master       x3  [StatefulSet] │  │
+     │              │  │  opensearch-data         x3  [StatefulSet] │  │
+     ▼              │  │  opensearch-coordinator  x2  [Deployment]  │  │
+  Dashboards :5601  │  │  opensearch-dashboards   x2  [Deployment]  │  │
                     │  └────────────────────────────────────────────┘  │
-  App logs          │                                                  │
-  Filebeat ──────►  │  ┌──────────────────── Ingest ────────────────┐  │
-  Logstash          │  │  logstash  ×2  [Deployment]                │  │
+  Data ingestion    │                                                  │
+  Scrapers ──────►  │  ┌──────────────────── Ingest ────────────────┐  │
+  Logstash          │  │  logstash  x2  [Deployment]                │  │
   :5000 :5044 :8080 │  └────────────────────────────────────────────┘  │
                     │                                                  │
-                    │  ┌─────────────────── HDFS HA ────────────────┐  │
-                    │  │  zookeeper      ×3  [StatefulSet]          │  │
-                    │  │  journalnode    ×3  [StatefulSet]          │  │
-                    │  │  namenode       ×2  [StatefulSet] HA       │  │
-                    │  │  datanode       ×3  [StatefulSet] 100Gi    │  │
+                    │  ┌─────────────── Distributed Storage ────────┐  │
+                    │  │  zookeeper      x3  [StatefulSet]          │  │
+                    │  │  journalnode    x3  [StatefulSet]          │  │
+                    │  │  namenode       x2  [StatefulSet] HA       │  │
+                    │  │  datanode       x3  [StatefulSet] 100Gi    │  │
                     │  └────────────────────────────────────────────┘  │
                     │                                                  │
-                    │  ┌─────────────────── YARN HA ────────────────┐  │
-                    │  │  resourcemanager  ×2  [StatefulSet] HA     │  │
+                    │  ┌──────────── Resource Management ────────────┐  │
+                    │  │  resourcemanager  x2  [StatefulSet] HA     │  │
                     │  │  nodemanager          [DaemonSet]          │  │
-                    │  │  historyserver    ×1  [Deployment]         │  │
+                    │  │  historyserver    x1  [Deployment]         │  │
                     │  └────────────────────────────────────────────┘  │
-                    └──────────────────────────────────────────────────┘
+                    └─────────────────────────────────────────────────┘
 ```
 
 **HDFS boot sequence** — enforced automatically by `initContainers`:
-
 ```
-ZooKeeper ×3  ──►  JournalNodes ×3  ──►  NameNode nn0  (format + zkfc)
-                                     └►  NameNode nn1  (bootstrapStandby)
-                                              │
-                                              ▼
-                                         DataNodes ×3
+ZooKeeper x3  -->  JournalNodes x3  -->  NameNode nn0  (format + zkfc)
+                                    -->  NameNode nn1  (bootstrapStandby)
+                                              |
+                                              v
+                                         DataNodes x3
 ```
 
 ---
 
-## ☁️ Multi-provider support
+## Stack decisions
 
-The `k8s/base/` layer is **100% provider-agnostic** — Kustomize overlays only patch the `StorageClass` name. Nothing else changes.
+| Choice | Alternative considered | Why |
+|---|---|---|
+| **OpenSearch** | Elasticsearch | Security (auth, RBAC, TLS) built-in — no X-Pack license |
+| **HDFS HA** | MinIO / S3 | Native YARN integration for future Spark/MapReduce jobs |
+| **YARN HA** | Kubernetes Jobs only | Resource isolation between ingestion and training workloads |
+| **Kustomize** | Helm | No templating language — overlays are plain YAML diffs |
+| **k3s (local)** | minikube / kind | Lightweight, production-like, runs on Proxmox VMs |
+| **Ansible** | Terraform remote-exec | Idempotent, readable, replays without side effects |
+
+---
+
+## Multi-provider support
+
+The `k8s/base/` layer is **100% provider-agnostic**. Kustomize overlays patch only the `StorageClass` name — nothing else changes between environments.
 
 | Provider | Engine | Terraform module | Kustomize overlay | StorageClass |
 |:---:|:---:|---|---|:---:|
-| **GCP** | GKE | `modules/gcp-gke` | `overlays/gcp` | `premium-rwo` |
-| **AWS** | EKS | `modules/aws-eks` | `overlays/aws` | `gp3` |
-| **Azure** | AKS | `modules/azure-aks` | `overlays/azure` | `managed-premium` |
-| **Local / Proxmox** | k3s | `modules/local-k3s` | `overlays/local` | `local-path` |
+| GCP | GKE | `modules/gcp-gke` | `overlays/gcp` | `premium-rwo` |
+| AWS | EKS | `modules/aws-eks` | `overlays/aws` | `gp3` |
+| Azure | AKS | `modules/azure-aks` | `overlays/azure` | `managed-premium` |
+| Local / Proxmox | k3s | `modules/local-k3s` | `overlays/local` | `local-path` |
 
 ---
 
-## 📁 Repository structure
+## Repository structure
 
 ```
 .
-├── 📂 k8s/
+├── k8s/
 │   ├── base/                              ← provider-agnostic manifests
 │   │   ├── namespace/
 │   │   ├── opensearch/                    ← master · data · coordinator · PDB
 │   │   ├── opensearch-dashboards/
-│   │   ├── logstash/
+│   │   ├── logstash/                      ← TCP · Beats · HTTP inputs → OpenSearch
 │   │   ├── hdfs/                          ← ZooKeeper · JournalNode · NameNode · DataNode
 │   │   ├── yarn/                          ← ResourceManager · NodeManager · HistoryServer
-│   │   └── ingress/
+│   │   └── ingress/                       ← nginx · sticky sessions · rate limiting
 │   └── overlays/
 │       ├── gcp/patches/
 │       ├── aws/patches/
 │       ├── azure/patches/
 │       └── local/patches/                 ← StorageClass + reduced resource limits
 │
-├── 📂 terraform/
+├── terraform/
 │   ├── modules/
-│   │   ├── gcp-gke/                       ← VPC + GKE cluster + node pools
-│   │   ├── aws-eks/                       ← VPC + EKS cluster + managed node groups
-│   │   ├── azure-aks/                     ← Resource group + AKS cluster
-│   │   └── local-k3s/                     ← Proxmox VMs + k3s install via SSH
+│   │   ├── gcp-gke/                       ← VPC + GKE regional cluster + node pools
+│   │   ├── aws-eks/                       ← VPC + EKS + managed node groups
+│   │   ├── azure-aks/                     ← Resource group + AKS
+│   │   └── local-k3s/                     ← Proxmox VMs provisioning
 │   └── environments/
 │       ├── example-gcp.tfvars
 │       ├── example-aws.tfvars
 │       ├── example-azure.tfvars
 │       └── example-local.tfvars
 │
-├── 📂 docs/
-│   └── guide-debutant.docx                ← Beginner guide (FR): K8s · OpenSearch · Hadoop · Terraform
+├── ansible/
+│   ├── roles/
+│   │   ├── common/                        ← sysctl · ulimits · kernel modules · swap
+│   │   ├── containerd/                    ← container runtime (SystemdCgroup)
+│   │   ├── k3s-server/                    ← control-plane install + kubeconfig fetch
+│   │   ├── k3s-agent/                     ← data node join
+│   │   └── k8s-node-config/               ← labels · taints · local-path · ingress
+│   ├── playbooks/
+│   │   ├── 00-preflight.yml               ← OS/RAM/disk checks, no changes
+│   │   ├── 01-base-setup.yml              ← system config (all nodes)
+│   │   ├── 02-k3s-cluster.yml             ← k3s install (Proxmox/local only)
+│   │   ├── 03-cloud-node-config.yml       ← sysctl on GKE/EKS/AKS nodes
+│   │   └── 04-deploy-platform.yml         ← kustomize build + kubectl apply
+│   └── inventories/
+│       ├── proxmox/                       ← static inventory (fill IPs manually)
+│       ├── gcp/                           ← dynamic via google.cloud.gcp_compute
+│       ├── aws/                           ← dynamic via amazon.aws.aws_ec2
+│       └── azure/                         ← dynamic via azure.azcollection.azure_rm
 │
-├── 📂 scripts/
-│   ├── create-secrets.sh                  ← Inject credentials as k8s Secrets
+├── docker/                                ← Local dev stack (no Kubernetes needed)
+│   ├── docker-compose.yml                 ← Full stack single-node
+│   ├── logstash/                          ← Pipeline config
+│   └── hadoop/                            ← Dev XML configs (replication=1, no HA)
+│
+├── docs/
+│   └── starter_guide.docx                 ← Beginner guide (FR): K8s · OpenSearch · Hadoop · Terraform
+│
+├── scripts/
+│   ├── create-secrets.sh                  ← Inject password as k8s Secret
 │   └── deploy.sh [gcp|aws|azure|local]    ← Ordered full-stack deploy
 │
 ├── .github/workflows/ci.yml               ← 5-job CI pipeline
-├── .env.example                           ← All environment variables documented
+├── .env.example
 └── .gitignore
 ```
 
 ---
 
-## 🚀 Getting started
+## Getting started
 
 ### Prerequisites
 
-- `kubectl` ≥ 1.28 — [install](https://kubernetes.io/docs/tasks/tools/)
-- `terraform` ≥ 1.7 — [install](https://developer.hashicorp.com/terraform/install)
-- `kustomize` ≥ 5.0 — [install](https://kubectl.docs.kubernetes.io/installation/kustomize/)
-- Cloud CLI (`gcloud` / `aws` / `az`) for your target provider
+| Tool | Version | Install |
+|---|---|---|
+| `kubectl` | >= 1.28 | [docs](https://kubernetes.io/docs/tasks/tools/) |
+| `terraform` | >= 1.7 | [docs](https://developer.hashicorp.com/terraform/install) |
+| `kustomize` | >= 5.0 | [docs](https://kubectl.docs.kubernetes.io/installation/kustomize/) |
+| `ansible` | >= 2.16 | `pip install ansible` |
+| Cloud CLI | latest | `gcloud` / `aws` / `az` |
 
 ### Step 1 — Provision the cluster
 
 <details>
-<summary><b>☁️ GCP (GKE)</b></summary>
+<summary><b>GCP (GKE)</b></summary>
 
 ```bash
 cd terraform/modules/gcp-gke
@@ -174,13 +232,12 @@ export GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa-key.json
 terraform init
 terraform apply -var-file=prod.tfvars
 
-# Configure kubectl
 $(terraform output -raw kubeconfig_cmd)
 ```
 </details>
 
 <details>
-<summary><b>☁️ AWS (EKS)</b></summary>
+<summary><b>AWS (EKS)</b></summary>
 
 ```bash
 cd terraform/modules/aws-eks
@@ -188,15 +245,14 @@ cp ../../environments/example-aws.tfvars prod.tfvars
 
 export AWS_ACCESS_KEY_ID=...
 export AWS_SECRET_ACCESS_KEY=...
-terraform init
-terraform apply -var-file=prod.tfvars
+terraform init && terraform apply -var-file=prod.tfvars
 
 $(terraform output -raw kubeconfig_cmd)
 ```
 </details>
 
 <details>
-<summary><b>☁️ Azure (AKS)</b></summary>
+<summary><b>Azure (AKS)</b></summary>
 
 ```bash
 az login
@@ -209,28 +265,30 @@ $(terraform output -raw kubeconfig_cmd)
 </details>
 
 <details>
-<summary><b>🖥️ Local / Proxmox (k3s)</b></summary>
+<summary><b>Local / Proxmox (k3s via Ansible)</b></summary>
 
 ```bash
-export PM_API_URL=https://192.168.1.100:8006/api2/json
-export PM_USER=root@pam
-export PM_PASS=yourpassword
-
+# 1. Terraform provisions the VMs only
 cd terraform/modules/local-k3s
-terraform init
-terraform apply -var-file=../../environments/example-local.tfvars
+terraform init && terraform apply -var-file=../../environments/example-local.tfvars
 
-$(terraform output -raw kubeconfig_cmd)
+# 2. Ansible installs and configures everything else
+cd ansible/
+ansible-galaxy collection install -r requirements.yml
 
-# Install local-path-provisioner for PVCs
-kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/master/deploy/local-path-storage.yaml
+# Edit inventories/proxmox/hosts.yml with your VM IPs
+ansible-playbook -i inventories/proxmox/ playbooks/00-preflight.yml  # check only
+ansible-playbook -i inventories/proxmox/ playbooks/01-base-setup.yml # sysctl + containerd
+ansible-playbook -i inventories/proxmox/ playbooks/02-k3s-cluster.yml # k3s + labels
+
+# kubeconfig is fetched automatically to repo root
+export KUBECONFIG=$(pwd)/../kubeconfig-server-0.yaml
 ```
 </details>
 
 ### Step 2 — Create secrets
 
 ```bash
-cd <repo-root>
 export OPENSEARCH_INITIAL_ADMIN_PASSWORD='YourStr0ng!Pass1'
 bash scripts/create-secrets.sh
 ```
@@ -238,152 +296,168 @@ bash scripts/create-secrets.sh
 ### Step 3 — Deploy
 
 ```bash
-# Choose: gcp | aws | azure | local
+# gcp | aws | azure | local
 bash scripts/deploy.sh gcp
 ```
 
 ### Step 4 — Verify
 
 ```bash
-# All pods running?
 kubectl -n data-platform get pods -o wide
 
-# OpenSearch cluster health
+# OpenSearch health
 kubectl -n data-platform port-forward svc/opensearch 9200:9200 &
-curl -u admin:YourStr0ng!Pass1 http://localhost:9200/_cluster/health?pretty
+curl -u admin:YourStr0ng!Pass1 https://localhost:9200/_cluster/health?pretty -k
 
-# Dashboards  →  http://localhost:5601
+# Dashboards  ->  http://localhost:5601
 kubectl -n data-platform port-forward svc/opensearch-dashboards 5601:5601 &
 
-# HDFS UI  →  http://localhost:9870
+# HDFS UI     ->  http://localhost:9870
 kubectl -n data-platform port-forward svc/hdfs-namenode 9870:9870 &
 
-# YARN UI  →  http://localhost:8088
+# YARN UI     ->  http://localhost:8088
 kubectl -n data-platform port-forward svc/yarn-resourcemanager 8088:8088 &
 ```
 
 ---
 
-## ⚙️ Configuration
+## Local dev (Docker)
 
-### Environment variables
+Test the full stack locally without any Kubernetes cluster:
 
-Copy `.env.example` → `.env` for local reference. In production, **all secrets use `kubectl create secret`** — never env files.
+```bash
+cp .env.example .env
+# Edit .env: set OPENSEARCH_INITIAL_ADMIN_PASSWORD
+
+make dev
+make dev-logs
+```
+
+| UI | URL |
+|---|---|
+| OpenSearch Dashboards | http://localhost:5601 |
+| OpenSearch API | http://localhost:9200 (Docker dev — HTTP) |
+| HDFS NameNode | http://localhost:9870 |
+| YARN ResourceManager | http://localhost:8088 |
+
+Differences vs production:
+
+| | Docker (dev) | Kubernetes (prod) |
+|---|---|---|
+| OpenSearch | 1 node, single-node discovery | 3 master + 3 data + 2 coordinator |
+| HDFS | 1 NameNode, replication=1 | 2 NameNodes HA + 3 JournalNodes |
+| YARN | 1 ResourceManager | 2 ResourceManagers HA |
+| JVM heap | 512MB per service | 1–4GB per role |
+
+---
+
+## Configuration
 
 | Variable | Default | Description |
 |---|:---:|---|
 | `OPENSEARCH_VERSION` | `2.17.0` | OpenSearch + Dashboards image tag |
-| `OPENSEARCH_INITIAL_ADMIN_PASSWORD` | — | **k8s Secret only** — never in files |
-| `OS_MASTER_HEAP` | `1g` | JVM heap — master nodes |
-| `OS_DATA_HEAP` | `2g` | JVM heap — data nodes |
-| `LS_HEAP_SIZE` | `1g` | JVM heap — Logstash |
+| `OPENSEARCH_INITIAL_ADMIN_PASSWORD` | — | k8s Secret only — never in files |
 | `PROVIDER` | `gcp` | Active overlay: `gcp` / `aws` / `azure` / `local` |
-
-### Changing StorageClass
-
-Edit the relevant overlay patch — this is the **only** file that differs between providers:
-
-```yaml
-# k8s/overlays/<provider>/patches/storageclass.yaml
-- op: replace
-  path: /spec/volumeClaimTemplates/0/spec/storageClassName
-  value: premium-rwo   # ← your StorageClass name here
-```
+| `K8S_NAMESPACE` | `data-platform` | Kubernetes namespace |
+| `LOGSTASH_VERSION` | `8.9.0` | Docker dev only |
 
 ---
 
-## 🔧 Operations
+## Operations
 
 ### Scale nodes
 
 ```bash
-# Add OpenSearch data nodes
 kubectl -n data-platform scale statefulset opensearch-data --replicas=5
-
-# Add HDFS data nodes
 kubectl -n data-platform scale statefulset hdfs-datanode --replicas=5
 ```
 
 ### Rolling upgrade — OpenSearch
 
 ```bash
-# Always: data nodes first → masters → coordinator
+# Data nodes first, then masters, then coordinator
 kubectl -n data-platform set image statefulset/opensearch-data \
   opensearch=opensearchproject/opensearch:2.18.0
 kubectl -n data-platform rollout status statefulset/opensearch-data --timeout=300s
-
-kubectl -n data-platform set image statefulset/opensearch-master \
-  opensearch=opensearchproject/opensearch:2.18.0
-kubectl -n data-platform rollout status statefulset/opensearch-master --timeout=300s
-```
-
-### Quick access (no Ingress)
-
-```bash
-kubectl -n data-platform port-forward svc/opensearch-dashboards 5601:5601 &  # → :5601
-kubectl -n data-platform port-forward svc/hdfs-namenode         9870:9870 &  # → :9870
-kubectl -n data-platform port-forward svc/yarn-resourcemanager  8088:8088 &  # → :8088
 ```
 
 ### Cluster health checks
 
 ```bash
 # OpenSearch
-curl -u admin:$PASS http://localhost:9200/_cluster/health?pretty
+curl -u admin:$PASS https://localhost:9200/_cluster/health?pretty -k  # K8s : TLS activé
 
-# HDFS — active NameNode
+# HDFS — which NameNode is active?
 kubectl -n data-platform exec hdfs-namenode-0 -- hdfs haadmin -getServiceState nn0
+kubectl -n data-platform exec hdfs-namenode-0 -- hdfs haadmin -getServiceState nn1
 
-# YARN — active ResourceManager
+# YARN — which ResourceManager is active?
 kubectl -n data-platform exec yarn-resourcemanager-0 -- yarn rmadmin -getServiceState rm0
 ```
 
 ---
 
-## 🔒 Security
+## Security
 
 | Control | Status | Notes |
 |---|:---:|---|
-| Passwords stored as k8s Secrets | ✅ | Never in manifests or git |
-| Cloud credentials | ✅ | ADC / Workload Identity / env vars |
-| OpenSearch auth + RBAC | ✅ | Built-in security plugin — no license |
-| Pods run as non-root | ✅ | `runAsUser: 1000`, `fsGroup: 1000` |
-| PodDisruptionBudgets | ✅ | Prevents accidental mass eviction |
-| Anti-affinity rules | ✅ | Master/data pods spread across nodes |
-| TLS — HTTPS end-to-end | ⬜ | Uncomment `cert-manager` annotations in `ingress.yaml` |
-| Kubernetes NetworkPolicies | ⬜ | Add to restrict pod-to-pod traffic |
-| Remote Terraform state | ⬜ | Uncomment `backend "gcs"` in `main.tf` |
+| Passwords stored as k8s Secrets | yes | Never in manifests or git |
+| Cloud credentials via ADC / env vars | yes | No credentials files committed |
+| OpenSearch auth + RBAC | yes | Built-in security plugin — no X-Pack |
+| Pods run as non-root | yes | `runAsUser: 1000`, `fsGroup: 1000` |
+| PodDisruptionBudgets | yes | Prevents mass eviction during maintenance |
+| Anti-affinity rules | yes | Master/data pods spread across nodes |
+| Probes use real password | yes | Exec probes with `$OPENSEARCH_INITIAL_ADMIN_PASSWORD` |
+| TLS — HTTPS end-to-end (OpenSearch) | yes | cert-manager PKI interne + `make bootstrap-cert-manager ARGS=--opensearch-pki` |
+| Kubernetes NetworkPolicies | yes | Default-deny + allow-list par composant (`network-policies/`) |
+| Remote Terraform state | yes | `make bootstrap-backend PROVIDER=gcp` — backends GCS/S3/Azure/HTTP |
 
 ---
 
-## 🧪 CI/CD
+## CI/CD
 
-Every push and pull request triggers the full pipeline:
+Every push and pull request triggers:
 
-| Job | Tool | What is checked |
+| Job | Tool | Checks |
 |---|---|---|
-| `secret-scan` | **Gitleaks** | No secrets or keys anywhere in git history |
-| `kube-validate` | **kubeconform** | All manifests valid against Kubernetes 1.30 schema |
-| `kustomize-build` | **kustomize** | All 4 overlays build without errors |
-| `terraform-validate` | **Terraform** | `fmt` + `validate` on all 4 modules |
-| `no-hardcoded-secrets` | **grep** | No `changeme` / `CHANGE_ME` in YAML files |
+| `secret-scan` | Gitleaks | No secrets anywhere in git history |
+| `no-hardcoded-secrets` | grep | No weak passwords in YAML / scripts |
+| `shellcheck` | ShellCheck | All bash scripts syntactically valid |
+| `kube-validate` | kubeconform | All manifests valid against Kubernetes 1.30 |
+| `kustomize-build` | kustomize | All 4 overlays build without errors |
+| `terraform-validate` | Terraform | `fmt` + `validate` on all 4 modules |
+| `checksums-validate` | bash | Ansible SHA256 checksums non-vides et distincts |
+| `domain-placeholder-check` | grep | Pas de domaine hardcodé dans l'Ingress base |
+| `trivy-scan` | Trivy | CVE CRITICAL/HIGH sur les 5 images Docker |
 
 ---
 
-## 📚 Documentation
+## Roadmap
+
+Diagnostix covers the infrastructure layer. The next phases:
+
+- [ ] Ingestion layer — pluggable scrapers (Scrapy / Playwright) writing to HDFS via Logstash
+- [ ] Processing layer — Apache Spark jobs on YARN for cleaning, deduplication, embedding
+- [ ] ML layer — MLflow for experiment tracking, DVC for dataset versioning
+- [ ] Model serving — API layer connecting to OpenSearch for inference-time retrieval
+
+---
+
+## Documentation
 
 | Document | Description |
 |---|---|
-| [`docs/stater_guide.docx`](docs/starter_guide.docx) | 📖 Beginner guide (FR) — Kubernetes, OpenSearch, Hadoop HDFS/YARN, Terraform explained from scratch with analogies, commands and glossaries |
+| [`docs/starter_guide.docx`](docs/starter_guide.docx) | Beginner guide (FR) — Kubernetes, OpenSearch, Hadoop HDFS/YARN, Terraform |
+| [`ansible/README.md`](ansible/README.md) | Ansible workflow — all playbooks and inventory setup |
+| [`docker/README.md`](docker/README.md) | Docker Compose local dev guide |
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
-1. Fork the repo and create a branch: `git checkout -b feat/my-feature`
-2. Make your changes — run `terraform fmt` and `kustomize build` locally to validate
-3. Push and open a Pull Request — CI will run automatically
-4. All 5 CI jobs must pass before merge
+1. Fork and branch: `git checkout -b feat/my-feature`
+2. Validate locally: `terraform fmt` · `kustomize build k8s/overlays/local` · `make validate`
+3. Push and open a PR — all 5 CI jobs must pass before merge
 
 ---
 
@@ -391,11 +465,7 @@ Every push and pull request triggers the full pipeline:
 
 <br/>
 
-Built with &nbsp;
-[OpenSearch](https://opensearch.org) &nbsp;·&nbsp;
-[Apache Hadoop](https://hadoop.apache.org) &nbsp;·&nbsp;
-[Kubernetes](https://kubernetes.io) &nbsp;·&nbsp;
-[Terraform](https://terraform.io)
+Built with OpenSearch · Apache Hadoop · Kubernetes · Terraform · Ansible · Docker
 
 <br/>
 

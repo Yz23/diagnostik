@@ -14,12 +14,21 @@ spec:
       app: hdfs
       role: journalnode
   podManagementPolicy: Parallel
+  # FIX: updateStrategy was missing — without it Kubernetes defaults to OnDelete
+  # which prevents automatic rolling updates
+  updateStrategy:
+    type: RollingUpdate
   template:
     metadata:
       labels:
         app: hdfs
         role: journalnode
     spec:
+      serviceAccountName: hadoop
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -47,6 +56,10 @@ spec:
               mountPath: /hadoop-config
             - name: journal
               mountPath: /hadoop/dfs/journal
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           resources:
             requests:
               memory: "512Mi"
@@ -60,6 +73,14 @@ spec:
               port: 8480
             initialDelaySeconds: 30
             periodSeconds: 10
+            failureThreshold: 5
+          livenessProbe:
+            httpGet:
+              path: /journalstatus
+              port: 8480
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            failureThreshold: 5
       volumes:
         - name: hadoop-config
           configMap:

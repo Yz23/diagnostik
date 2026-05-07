@@ -1,10 +1,18 @@
 terraform {
+  required_version = ">= 1.7, < 2.0"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
   }
+  # ── Remote state — partial backend configuration ──────────────────────────
+  # Activer avec : bash scripts/bootstrap-backend.sh aws
+  # Le fichier terraform/backends/s3.tfbackend est généré par le script.
+  # Passé via : terraform init -backend-config=../../terraform/backends/s3.tfbackend
+  #
+  # Bloc vide = Terraform accepte -backend-config dynamique sans modifier ce fichier.
+  backend "s3" {}
 }
 
 provider "aws" {
@@ -37,10 +45,20 @@ module "eks" {
 
   cluster_name    = var.cluster_name
   cluster_version = "1.30"
+  cluster_enabled_log_types = ["api","audit","authenticator","controllerManager","scheduler"]
 
-  vpc_id                         = module.vpc.vpc_id
-  subnet_ids                     = module.vpc.private_subnets
-  cluster_endpoint_public_access = true
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnets
+
+  # FIX H5 : Restreindre l'accès public à des CIDRs légitimes uniquement.
+  # Option recommandée en production : désactiver l'accès public et utiliser
+  # un bastion ou un VPN pour accéder à l'API server.
+  # Option intermédiaire : restreindre aux IPs des opérateurs et des CI runners.
+  cluster_endpoint_public_access       = true
+  cluster_endpoint_public_access_cidrs = var.allowed_public_cidrs
+  # Pour désactiver complètement l'accès public :
+  # cluster_endpoint_public_access  = false
+  # cluster_endpoint_private_access = true
 
   eks_managed_node_groups = {
     general = {

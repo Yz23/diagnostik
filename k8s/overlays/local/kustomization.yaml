@@ -1,35 +1,63 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+# ── Overlay local — k3s single-node (dev / Proxmox) ──────────────────────────
+# Différences vs cloud :
+#   • Tous les StatefulSets multi-replicas réduits à 1
+#   • OpenSearch en mode single-node (pas de quorum)
+#   • Resources mémoire réduites (resources-small)
+#   • StorageClass : local-path (provisioner k3s)
+# ──────────────────────────────────────────────────────────────────────────────
+
 resources:
   - ../../base
 
 patches:
+  # ── StorageClass local-path pour tous les PVCs ──────────────────────────────
   - path: patches/storageclass.yaml
-    target:
-      kind: StatefulSet
-      name: opensearch-data
+    target: { kind: StatefulSet, name: opensearch-data }
   - path: patches/storageclass.yaml
-    target:
-      kind: StatefulSet
-      name: hdfs-datanode
+    target: { kind: StatefulSet, name: hdfs-datanode }
   - path: patches/storageclass.yaml
-    target:
-      kind: StatefulSet
-      name: hdfs-journalnode
+    target: { kind: StatefulSet, name: hdfs-journalnode }
   - path: patches/storageclass.yaml
-    target:
-      kind: StatefulSet
-      name: hdfs-namenode
+    target: { kind: StatefulSet, name: hdfs-namenode }
   - path: patches/storageclass.yaml
-    target:
-      kind: StatefulSet
-      name: zookeeper
+    target: { kind: StatefulSet, name: zookeeper }
+
+  # ── Replicas → 1 sur tous les StatefulSets multi-instances ─────────────────
+  - path: patches/replicas-single.yaml
+    target: { kind: StatefulSet, name: zookeeper }
+  - path: patches/replicas-single.yaml
+    target: { kind: StatefulSet, name: hdfs-journalnode }
+  - path: patches/replicas-single.yaml
+    target: { kind: StatefulSet, name: hdfs-namenode }
+  - path: patches/replicas-single.yaml
+    target: { kind: StatefulSet, name: hdfs-datanode }
+  - path: patches/replicas-single.yaml
+    target: { kind: StatefulSet, name: yarn-resourcemanager }
+  - path: patches/replicas-single.yaml
+    target: { kind: StatefulSet, name: opensearch-data }
+
+  # ── OpenSearch master : single-node + 1 replica ─────────────────────────────
+  - path: patches/opensearch-single-node.yaml
+
+  # ── Resources mémoire réduites ───────────────────────────────────────────────
   - path: patches/resources-small.yaml
-    target:
-      kind: StatefulSet
-      name: opensearch-master
+    target: { kind: StatefulSet, name: opensearch-master }
   - path: patches/resources-small.yaml
-    target:
-      kind: StatefulSet
-      name: opensearch-data
+    target: { kind: StatefulSet, name: opensearch-data }
+  - path: patches/resources-small.yaml
+    target: { kind: StatefulSet, name: hdfs-namenode }
+  - path: patches/resources-small.yaml
+    target: { kind: StatefulSet, name: hdfs-datanode }
+
+  # ── HDFS replication=1 (1 seul DataNode en local) ────────────────────────────
+  - path: patches/hdfs-replication-1.yaml
+    target: { kind: ConfigMap, name: hadoop-config }
+
+  # ── FIX B3 : NameNode init attend 1 seul JournalNode en local ────────────────
+  - path: patches/namenode-wait-single-journalnode.yaml
+
+  # FIX C2 : ResourceQuota adapté au local (remplace les 80Gi de la base)
+  - path: patches/resource-quota-small.yaml

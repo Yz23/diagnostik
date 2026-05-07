@@ -20,26 +20,21 @@ spec:
       labels:
         app: logstash
     spec:
+      serviceAccountName: logstash
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
         - name: logstash
           image: opensearchproject/logstash-oss-with-opensearch-output-plugin:8.9.0
           imagePullPolicy: IfNotPresent
           ports:
-            - name: tcp-input
-              containerPort: 5000
-              protocol: TCP
-            - name: udp-input
-              containerPort: 5000
-              protocol: UDP
-            - name: beats
-              containerPort: 5044
-              protocol: TCP
-            - name: http-input
-              containerPort: 8080
-              protocol: TCP
-            - name: api
-              containerPort: 9600
-              protocol: TCP
+            - { name: tcp-input,  containerPort: 5000, protocol: TCP }
+            - { name: udp-input,  containerPort: 5000, protocol: UDP }
+            - { name: beats,      containerPort: 5044, protocol: TCP }
+            - { name: http-input, containerPort: 8080, protocol: TCP }
+            - { name: api,        containerPort: 9600, protocol: TCP }
           env:
             - name: LS_JAVA_OPTS
               value: "-Xms1g -Xmx1g"
@@ -48,44 +43,50 @@ spec:
                 secretKeyRef:
                   name: opensearch-credentials
                   key: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+            # Prod K8s : TLS activé vers OpenSearch
+            # Même pipeline.conf que Docker — comportement différent via env vars
+            - name: OPENSEARCH_HOST
+              value: "https://opensearch:9200"
+            - name: LS_SSL_ENABLED
+              value: "true"
+            - name: LS_SSL_VERIFY
+              value: "true"
+            - name: LS_SSL_CACERT
+              value: "/usr/share/logstash/config/certs/ca.crt"
           volumeMounts:
             - name: config
               mountPath: /usr/share/logstash/config/logstash.yml
               subPath: logstash.yml
-            - name: pipeline
+            - name: config
               mountPath: /usr/share/logstash/pipeline/main.conf
               subPath: main.conf
+            # Secret TLS à créer séparément (voir scripts/create-secrets.sh)
+            - name: tls-certs
+              mountPath: /usr/share/logstash/config/certs
+              readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           resources:
-            requests:
-              memory: "2Gi"
-              cpu: "500m"
-            limits:
-              memory: "2Gi"
-              cpu: "1500m"
+            requests: { memory: "2Gi", cpu: "500m" }
+            limits:   { memory: "2Gi", cpu: "1500m" }
           readinessProbe:
-            httpGet:
-              path: /
-              port: 9600
+            httpGet: { path: /, port: 9600 }
             initialDelaySeconds: 60
             periodSeconds: 10
             failureThreshold: 5
           livenessProbe:
-            httpGet:
-              path: /
-              port: 9600
+            httpGet: { path: /, port: 9600 }
             initialDelaySeconds: 90
             periodSeconds: 30
             failureThreshold: 3
       volumes:
+        # Généré par configMapGenerator depuis config/logstash/
         - name: config
           configMap:
             name: logstash-config
-            items:
-              - key: logstash.yml
-                path: logstash.yml
-        - name: pipeline
-          configMap:
-            name: logstash-config
-            items:
-              - key: main.conf
-                path: main.conf
+        # Décommenter quand le Secret TLS est disponible :
+        - name: tls-certs
+          secret:
+            secretName: opensearch-tls-certs

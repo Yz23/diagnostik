@@ -38,7 +38,29 @@ data:
       </property>
       <property><name>dfs.client.failover.proxy.provider.hdfs-cluster</name><value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value></property>
       <property><name>dfs.ha.automatic-failover.enabled</name><value>true</value></property>
-      <property><name>dfs.ha.fencing.methods</name><value>shell(/bin/true)</value></property>
+
+      <!--
+        FENCING K8S-NATIF :
+        Le script /scripts/fence-namenode.sh utilise l'API Kubernetes pour
+        force-delete le pod NameNode défaillant (gracePeriodSeconds=0).
+
+        Flux : ZKFC détecte la perte de leadership ZK → appelle fence-namenode.sh
+        avec le DNS du NN à fencer → script DELETE le pod via l'API K8s → pod mort.
+
+        Fallback shell(/bin/true) : si le script échoue (ex: pod déjà supprimé,
+        API K8s indisponible), on accepte le failover quand même. ZKFC + ZK
+        assurent qu'un seul NN peut écrire dans ZK comme actif simultanément.
+
+        Prérequis :
+          • ConfigMap hdfs-fence-script monté dans le pod NameNode
+          • ServiceAccount hdfs-namenode avec automountServiceAccountToken: true
+          • RBAC Role hdfs-namenode-fencer : pods/delete dans le namespace
+          • Variable d'env POD_NAMESPACE injectée via Downward API
+      -->
+      <property>
+        <name>dfs.ha.fencing.methods</name>
+        <value>shell(/scripts/fence-namenode.sh);shell(/bin/true)</value>
+      </property>
       <property><name>dfs.replication</name><value>3</value></property>
       <property><name>dfs.datanode.data.dir</name><value>/hadoop/dfs/data</value></property>
       <property><name>dfs.namenode.name.dir</name><value>/hadoop/dfs/name</value></property>

@@ -1,0 +1,7 @@
+# ── Local/Proxmox remote state backend — HTTP ────────────────────────────────
+# Copier en local.tfbackend et remplir les valeurs réelles.
+# Créer le backend avec : bash scripts/bootstrap-backend.sh local
+# Ce fichier est gitignore après remplissage.
+address        = "https://VOTRE-BACKEND/data-platform/local"
+lock_address   = "https://VOTRE-BACKEND/data-platform/local/lock"
+unlock_address = "https://VOTRE-BACKEND/data-platform/local/lock"

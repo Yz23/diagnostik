@@ -1,0 +1,22 @@
+# FIX B3 : En overlay local, replicas-single.yaml réduit les JournalNodes à 1.
+# L'init container du NameNode attend hdfs-journalnode-1 et hdfs-journalnode-2
+# qui n'existent pas → hang infini.
+# Ce patch remplace le script wait par une version qui n'attend qu'un seul JN.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: hdfs-namenode
+  namespace: data-platform
+spec:
+  template:
+    spec:
+      initContainers:
+        - name: wait-for-deps
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              echo "Waiting for ZooKeeper..."
+              until nc -z zookeeper-0.zookeeper-headless 2181; do sleep 3; done
+              echo "Waiting for JournalNode-0 (local overlay: 1 JN only)..."
+              until nc -z hdfs-journalnode-0.hdfs-journalnode-headless 8485; do sleep 3; done
+              echo "Dependencies ready."

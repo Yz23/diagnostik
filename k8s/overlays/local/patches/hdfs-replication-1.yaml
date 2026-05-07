@@ -1,0 +1,33 @@
+# Réduit la réplication HDFS à 1 pour l'overlay local (1 seul DataNode).
+# Sans ce patch, HDFS refuse d'écrire car il ne peut pas répliquer à 3.
+# Ce patch génère un nouveau ConfigMap avec dfs.replication=1.
+# Il est appliqué uniquement par l'overlay local/.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hadoop-config
+  namespace: data-platform
+data:
+  hdfs-site.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <configuration>
+      <property><name>dfs.nameservices</name><value>hdfs-cluster</value></property>
+      <property><name>dfs.ha.namenodes.hdfs-cluster</name><value>nn0,nn1</value></property>
+      <property><name>dfs.namenode.rpc-address.hdfs-cluster.nn0</name><value>hdfs-namenode-0.hdfs-namenode-headless.data-platform.svc.cluster.local:8020</value></property>
+      <property><name>dfs.namenode.rpc-address.hdfs-cluster.nn1</name><value>hdfs-namenode-1.hdfs-namenode-headless.data-platform.svc.cluster.local:8020</value></property>
+      <property><name>dfs.namenode.http-address.hdfs-cluster.nn0</name><value>hdfs-namenode-0.hdfs-namenode-headless.data-platform.svc.cluster.local:9870</value></property>
+      <property><name>dfs.namenode.http-address.hdfs-cluster.nn1</name><value>hdfs-namenode-1.hdfs-namenode-headless.data-platform.svc.cluster.local:9870</value></property>
+      <property>
+        <name>dfs.namenode.shared.edits.dir</name>
+        <value>qjournal://hdfs-journalnode-0.hdfs-journalnode-headless.data-platform.svc.cluster.local:8485/hdfs-cluster</value>
+      </property>
+      <property><name>dfs.client.failover.proxy.provider.hdfs-cluster</name><value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value></property>
+      <property><name>dfs.ha.automatic-failover.enabled</name><value>true</value></property>
+      <property><name>dfs.ha.fencing.methods</name><value>shell(/bin/true)</value></property>
+      <!-- LOCAL OVERLAY : réplication 1 car 1 seul DataNode -->
+      <property><name>dfs.replication</name><value>1</value></property>
+      <property><name>dfs.datanode.data.dir</name><value>/hadoop/dfs/data</value></property>
+      <property><name>dfs.namenode.name.dir</name><value>/hadoop/dfs/name</value></property>
+      <property><name>dfs.journalnode.edits.dir</name><value>/hadoop/dfs/journal</value></property>
+      <property><name>dfs.blocksize</name><value>134217728</value></property>
+    </configuration>

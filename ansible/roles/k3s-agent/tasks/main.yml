@@ -1,0 +1,29 @@
+---
+# Joint les nœuds data au cluster k3s existant.
+# Doit tourner APRÈS le playbook k3s-server.
+
+- name: Check if k3s-agent is already installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+  register: k3s_binary
+
+- name: Install k3s agent
+  ansible.builtin.shell: |
+    curl -sfL https://get.k3s.io | \
+      INSTALL_K3S_VERSION="{{ k3s_version }}" \
+      K3S_URL="https://{{ hostvars[groups['k3s_server'][0]]['ansible_default_ipv4']['address'] }}:6443" \
+      K3S_TOKEN="{{ hostvars[groups['k3s_server'][0]]['k3s_token'] }}" \
+      INSTALL_K3S_EXEC="agent \
+        --container-runtime-endpoint unix:///run/containerd/containerd.sock" \
+      sh -
+  when: not k3s_binary.stat.exists
+  notify: restart k3s-agent
+
+- name: Wait for agent node to be registered
+  ansible.builtin.command: >
+    k3s kubectl get node {{ inventory_hostname }}
+  delegate_to: "{{ groups['k3s_server'][0] }}"
+  register: node_check
+  until: node_check.rc == 0
+  retries: 20
+  delay: 10
