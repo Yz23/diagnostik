@@ -4,3 +4,13 @@ metadata:
   name: data-platform
   labels:
     app.kubernetes.io/managed-by: kustomize
+    # ── Pod Security Admission (K8s 1.25+) ────────────────────────────────────
+    # warn : signale sans bloquer (migration en douceur)
+    # enforce: baseline bloque les pods les plus dangereux (pas privileged sauf sysctl init)
+    # NOTE : les sysctl initContainers OpenSearch nécessitent privileged: true.
+    #        Pour les bloquer, passer à enforce: restricted + utiliser pod-level sysctls.
+    #        (nécessite que le nœud autorise le sysctl vm.max_map_count non-sécurisé)
+    pod-security.kubernetes.io/warn: baseline
+    pod-security.kubernetes.io/warn-version: "v1.30"
+    pod-security.kubernetes.io/audit: baseline
+    pod-security.kubernetes.io/audit-version: "v1.30"

@@ -1,0 +1,11 @@
+---
+# GKE/EKS/AKS — post-deploy checks. Le rôle common est déjà appliqué par 01-base-setup.yml.
+# Ce playbook est intentionnellement minimal : les nœuds managés cloud ont déjà
+# sysctl configuré par le fournisseur. Réappliquer common doublerait les tâches.
+- name: Cloud node post-deploy (no-op — sysctl géré par le provider)
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - ansible.builtin.debug:
+        msg: "Cloud nodes managed by provider — configuration applied by provider."

@@ -21,3 +21,66 @@ spec:
     matchLabels:
       app: opensearch
       role: data
+
+---
+# HDFS NameNode HA : au moins 1 NameNode disponible en permanence
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: hdfs-namenode-pdb
+  namespace: data-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: hdfs
+      role: namenode
+---
+# HDFS JournalNode : quorum de 2 sur 3 requis (écriture des edit logs)
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: hdfs-journalnode-pdb
+  namespace: data-platform
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: hdfs
+      role: journalnode
+---
+# ZooKeeper : quorum de 2 sur 3 requis
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: zookeeper-pdb
+  namespace: data-platform
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: zookeeper
+---
+# YARN ResourceManager HA : au moins 1 RM disponible
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: yarn-resourcemanager-pdb
+  namespace: data-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: yarn
+      role: resourcemanager
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: opensearch-dashboards-pdb
+  namespace: data-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: opensearch-dashboards

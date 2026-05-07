@@ -1,0 +1,6 @@
+# ── GCP remote state backend — GCS ───────────────────────────────────────────
+# Copier en gcp.tfbackend et remplir les valeurs réelles.
+# Créer le bucket avec : bash scripts/bootstrap-backend.sh gcp
+# Ce fichier est gitignore après remplissage.
+bucket = "VOTRE-PROJET-tf-state"
+prefix = "data-platform/gcp"

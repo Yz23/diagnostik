@@ -22,6 +22,13 @@ spec:
         app: hdfs
         role: namenode
     spec:
+      # FIX M6 : contexte de sécurité pod
+      # SA dédié avec automount token pour le fencing K8s-natif
+      serviceAccountName: hdfs-namenode
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000     # UID hadoop dans l'image apache/hadoop
+        fsGroup: 1000
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -40,6 +47,12 @@ spec:
               until nc -z hdfs-journalnode-0.hdfs-journalnode-headless 8485; do sleep 3; done
               until nc -z hdfs-journalnode-1.hdfs-journalnode-headless 8485; do sleep 3; done
               until nc -z hdfs-journalnode-2.hdfs-journalnode-headless 8485; do sleep 3; done
+          # FIX M6 : pas de privilèges élevés pour le init container de wait
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 65534  # nobody
       containers:
         - name: namenode
           image: apache/hadoop:3.3.6
@@ -71,11 +84,29 @@ spec:
           env:
             - name: HADOOP_OPTS
               value: "-Xms1g -Xmx1g"
+            # Downward API : injecte le namespace courant pour le script de fencing
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          # FIX M6 : contexte de sécurité container
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           volumeMounts:
             - name: hadoop-config
               mountPath: /hadoop-config
             - name: namenode-data
               mountPath: /hadoop/dfs/name
+            - name: fence-script
+              mountPath: /scripts
+              readOnly: true
           resources:
             requests:
               memory: "2Gi"
@@ -96,10 +127,15 @@ spec:
               port: 9870
             initialDelaySeconds: 90
             periodSeconds: 30
+            failureThreshold: 5
       volumes:
         - name: hadoop-config
           configMap:
             name: hadoop-config
+        - name: fence-script
+          configMap:
+            name: hdfs-fence-script
+            defaultMode: 0755  # exécutable
   volumeClaimTemplates:
     - metadata:
         name: namenode-data

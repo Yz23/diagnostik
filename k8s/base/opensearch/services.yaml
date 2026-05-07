@@ -47,6 +47,11 @@ metadata:
   labels:
     app: opensearch
     role: coordinator
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port:   "9200"
+    prometheus.io/path:   "/_prometheus/metrics"
+    prometheus.io/scheme: "https"
 spec:
   type: ClusterIP
   selector:

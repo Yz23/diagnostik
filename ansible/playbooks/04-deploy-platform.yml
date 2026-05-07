@@ -1,0 +1,59 @@
+---
+# ── Déploiement de la data platform via kustomize ──────────────────────────────
+# Ce playbook délègue à scripts/deploy.sh pour rester en sync avec la logique
+# du Makefile. DRY : une seule implémentation de la séquence de déploiement.
+#
+# Prérequis (avant d'exécuter ce playbook) :
+#   - OPENSEARCH_INITIAL_ADMIN_PASSWORD exporté
+#   - bash scripts/create-secrets.sh     (crée opensearch-credentials)
+#   - bash scripts/generate-certs-dev.sh (crée opensearch-tls-certs, dev)
+#     OU make bootstrap-cert-manager ARGS=--opensearch-pki (prod, cert-manager)
+# ─────────────────────────────────────────────────────────────────────────────
+
+- name: Deploy data platform via kustomize
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    provider: "{{ lookup('env', 'PROVIDER') | default('local', true) }}"
+
+  tasks:
+    - name: Check kubectl connectivity
+      ansible.builtin.command: kubectl cluster-info
+      changed_when: false
+
+    - name: Check secret opensearch-credentials exists
+      ansible.builtin.command: kubectl -n data-platform get secret opensearch-credentials
+      register: secret_credentials
+      failed_when: false
+      changed_when: false
+
+    - name: Fail if opensearch-credentials missing
+      ansible.builtin.fail:
+        msg: "Créer le Secret opensearch-credentials : bash scripts/create-secrets.sh"
+      when: secret_credentials.rc != 0
+
+    - name: Check secret opensearch-tls-certs exists
+      ansible.builtin.command: kubectl -n data-platform get secret opensearch-tls-certs
+      register: secret_tls
+      failed_when: false
+      changed_when: false
+
+    - name: Fail if opensearch-tls-certs missing
+      ansible.builtin.fail:
+        msg: |
+          Créer le Secret opensearch-tls-certs :
+            Dev  : bash scripts/generate-certs-dev.sh
+            Prod : make bootstrap-cert-manager ARGS=--opensearch-pki
+      when: secret_tls.rc != 0
+
+    # DRY : déléguer à deploy.sh (même logique que make deploy)
+    # deploy.sh gère : namespace, secrets, cert-manager check, kustomize apply, rollout wait
+    - name: Deploy via scripts/deploy.sh
+      ansible.builtin.command: bash scripts/deploy.sh {{ provider }}
+      changed_when: true
+      register: deploy_output
+
+    - name: Print deploy output
+      ansible.builtin.debug:
+        msg: "{{ deploy_output.stdout_lines }}"

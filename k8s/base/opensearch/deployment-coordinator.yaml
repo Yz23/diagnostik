@@ -61,6 +61,9 @@ spec:
             - name: config
               mountPath: /usr/share/opensearch/config/opensearch.yml
               subPath: opensearch.yml
+            - name: tls-certs
+              mountPath: /usr/share/opensearch/config/certs
+              readOnly: true
           resources:
             requests:
               memory: "2Gi"
@@ -68,25 +71,41 @@ spec:
             limits:
               memory: "2Gi"
               cpu: "1500m"
+          # FIX C3 : startupProbe — 10 min pour le premier démarrage avant livenessProbe
+          startupProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  curl -fs -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" \
+                    https://localhost:9200/_cluster/health?local=true -k || exit 1
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 40
           readinessProbe:
-            httpGet:
-              path: /_cluster/health
-              port: 9200
-              httpHeaders:
-                - name: Authorization
-                  value: "Basic YWRtaW46YWRtaW4="
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  curl -fs -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" \
+                    https://localhost:9200/_cluster/health -k || exit 1
             initialDelaySeconds: 60
             periodSeconds: 10
             failureThreshold: 5
           livenessProbe:
-            httpGet:
-              path: /_cluster/health
-              port: 9200
-              httpHeaders:
-                - name: Authorization
-                  value: "Basic YWRtaW46YWRtaW4="
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  curl -fs -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" \
+                    https://localhost:9200/_cluster/health -k || exit 1
             initialDelaySeconds: 90
             periodSeconds: 30
+            failureThreshold: 5
+      serviceAccountName: opensearch
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -95,3 +114,8 @@ spec:
         - name: config
           configMap:
             name: opensearch-config
+        - name: tls-certs
+          secret:
+            secretName: opensearch-tls-certs
+            # Créer avec : make secret-tls  (ou : bash scripts/generate-certs-dev.sh)
+            # En prod    : cert-manager alimente ce Secret automatiquement

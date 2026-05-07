@@ -1,0 +1,30 @@
+---
+- name: Pre-flight checks
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: Check Ubuntu 22.04+
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == "Ubuntu"
+          - ansible_distribution_major_version | int >= 22
+        fail_msg: "Ubuntu 22.04+ required. Got: {{ ansible_distribution }} {{ ansible_distribution_version }}"
+    - name: Check minimum 4GB RAM
+      ansible.builtin.assert:
+        that: ansible_memtotal_mb >= 3800
+        fail_msg: "4GB RAM required. Got {{ ansible_memtotal_mb }}MB"
+    - name: Check SSH + sudo
+      ansible.builtin.command: sudo -n true
+      changed_when: false
+    - name: Check minimum disk space (20GB free on /)
+      ansible.builtin.assert:
+        that: ansible_mounts | selectattr('mount','equalto','/') | map(attribute='size_available') | first > 20*1024*1024*1024
+        fail_msg: "Need 20GB free on /. Available: {{ (ansible_mounts | selectattr('mount','equalto','/') | map(attribute='size_available') | first /1024/1024/1024) | round(1) }}GB"
+    - name: Check minimum disk space on data nodes (500GB)
+      ansible.builtin.assert:
+        that: ansible_mounts | selectattr('mount','equalto','/') | map(attribute='size_available') | first > 500*1024*1024*1024
+        fail_msg: "Data node needs 500GB free."
+      when: inventory_hostname in groups.get('data_nodes',[])
+    - name: Print node summary
+      ansible.builtin.debug:
+        msg: "✓ {{ inventory_hostname }} — {{ ansible_distribution }} {{ ansible_distribution_version }} — {{ ansible_memtotal_mb }}MB RAM — {{ ansible_processor_vcpus }} vCPUs"

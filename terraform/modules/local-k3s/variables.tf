@@ -8,8 +8,16 @@ variable "proxmox_api_url" {
 }
 
 variable "proxmox_user" {
-  type    = string
-  default = "root@pam"
+  type        = string
+  # FIX B9 : Ne pas utiliser root@pam en production.
+  # Créer un compte de service dédié avec des permissions minimales :
+  #   pveum user add terraform@pve
+  #   pveum aclmod / -user terraform@pve -role PVEVMAdmin
+  #   pveum aclmod /storage -user terraform@pve -role PVEDatastoreAdmin
+  # Ou utiliser un token API :
+  #   pveum user tokenadd terraform@pve terraform --privsep 0
+  description = "Proxmox user (ex: terraform@pve — éviter root@pam)"
+  default     = "terraform@pve"
 }
 
 variable "proxmox_password" {

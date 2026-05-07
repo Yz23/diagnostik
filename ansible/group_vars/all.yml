@@ -1,0 +1,24 @@
+---
+# ── Versions ──────────────────────────────────────────────────
+k3s_version: "v1.30.2+k3s1"
+containerd_version: "1.7.20"
+
+# ── Cluster ───────────────────────────────────────────────────
+k8s_namespace: data-platform
+k3s_cluster_name: data-platform
+
+# ── User ──────────────────────────────────────────────────────
+ansible_user: ubuntu
+ansible_become: true
+
+# ── System requirements (OpenSearch + HDFS) ───────────────────
+vm_max_map_count: 262144
+fs_file_max: 1048576
+ulimit_nofile_soft: 65536
+ulimit_nofile_hard: 65536
+ulimit_memlock_soft: -1
+ulimit_memlock_hard: -1
+
+# ── Node labels / taints ──────────────────────────────────────
+hadoop_data_label: "role=hadoop-data"
+hadoop_data_taint: "dedicated=hadoop-data:NoSchedule"

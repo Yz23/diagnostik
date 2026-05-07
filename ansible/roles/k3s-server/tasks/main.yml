@@ -1,0 +1,67 @@
+---
+# Installe k3s en mode server (control-plane) sur le premier nœud.
+
+- name: Check if k3s is already installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+  register: k3s_binary
+
+- name: Install k3s server
+  ansible.builtin.shell: |
+    curl -sfL https://get.k3s.io | \
+      INSTALL_K3S_VERSION="{{ k3s_version }}" \
+      INSTALL_K3S_EXEC="server \
+        --disable traefik \
+        --disable servicelb \
+        --container-runtime-endpoint unix:///run/containerd/containerd.sock \
+        --flannel-backend=vxlan \
+        --cluster-cidr=10.42.0.0/16 \
+        --service-cidr=10.43.0.0/16 \
+        --write-kubeconfig-mode 600" \
+      sh -
+  when: not k3s_binary.stat.exists
+  notify: restart k3s
+
+- name: Wait for k3s to be ready
+  ansible.builtin.wait_for:
+    path: /etc/rancher/k3s/k3s.yaml
+    timeout: 120
+
+- name: Wait for node to be Ready
+  ansible.builtin.command: k3s kubectl get node {{ inventory_hostname }} -o jsonpath='{.status.conditions[-1].type}'
+  register: node_status
+  until: node_status.stdout == "Ready"
+  retries: 30
+  delay: 10
+
+- name: Read k3s node token
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_token_raw
+
+- name: Set k3s token as fact for agents
+  ansible.builtin.set_fact:
+    k3s_token: "{{ k3s_token_raw.content | b64decode | trim }}"
+    k3s_server_ip: "{{ ansible_default_ipv4.address }}"
+
+- name: Fetch kubeconfig locally
+  ansible.builtin.fetch:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "{{ playbook_dir }}/../kubeconfig-{{ inventory_hostname }}.yaml"
+    flat: true
+
+# FIX M3 : sécuriser le kubeconfig local fetché
+- name: Restrict local kubeconfig permissions
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/../kubeconfig-{{ inventory_hostname }}.yaml"
+    mode: "0600"
+  delegate_to: localhost
+  become: false
+
+- name: Fix kubeconfig server IP
+  ansible.builtin.replace:
+    path: "{{ playbook_dir }}/../kubeconfig-{{ inventory_hostname }}.yaml"
+    regexp: 'https://127.0.0.1:6443'
+    replace: "https://{{ ansible_default_ipv4.address }}:6443"
+  delegate_to: localhost
+  become: false

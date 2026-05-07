@@ -1,0 +1,69 @@
+---
+# Configure les labels et taints Kubernetes sur les nœuds.
+# Tourne APRÈS k3s-server + k3s-agent pour que les nœuds existent.
+#
+# FIX : les variables locales (provisioner URLs) sont désormais dans vars/main.yml
+# pour respecter la structure de rôle Ansible (les vars ne peuvent pas être au
+# niveau racine d'un fichier tasks/).
+
+- name: Label general nodes
+  ansible.builtin.command: >
+    k3s kubectl label node {{ item }}
+    role=general
+    --overwrite
+  loop: "{{ groups['k3s_server'] | default([]) }}"
+  delegate_to: "{{ groups['k3s_server'][0] }}"
+  run_once: true
+  ignore_errors: true
+
+- name: Label data nodes
+  ansible.builtin.command: >
+    k3s kubectl label node {{ item }}
+    {{ hadoop_data_label }}
+    --overwrite
+  loop: "{{ groups['data_nodes'] | default([]) }}"
+  delegate_to: "{{ groups['k3s_server'][0] }}"
+  run_once: true
+
+- name: Taint data nodes (only OpenSearch/Hadoop pods schedule here)
+  ansible.builtin.command: >
+    k3s kubectl taint node {{ item }}
+    {{ hadoop_data_taint }}
+    --overwrite
+  loop: "{{ groups['data_nodes'] | default([]) }}"
+  delegate_to: "{{ groups['k3s_server'][0] }}"
+  run_once: true
+
+# FIX H2 : versions épinglées + vérification d'intégrité (SHA256 dans vars/main.yml)
+- name: Download local-path-provisioner manifest
+  ansible.builtin.get_url:
+    url: "{{ local_path_provisioner_url }}"
+    dest: /tmp/local-path-storage.yaml
+    checksum: "{{ (local_path_provisioner_sha256 != '') | ternary('sha256:' + local_path_provisioner_sha256, omit) }}"
+  delegate_to: "{{ groups['k3s_server'][0] }}"
+  run_once: true
+
+- name: Install local-path-provisioner (PVC support on k3s)
+  ansible.builtin.command: k3s kubectl apply -f /tmp/local-path-storage.yaml
+  delegate_to: "{{ groups['k3s_server'][0] }}"
+  run_once: true
+
+- name: Set local-path as default StorageClass
+  ansible.builtin.command: >
+    k3s kubectl patch storageclass local-path
+    -p '{"metadata":{"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+  delegate_to: "{{ groups['k3s_server'][0] }}"
+  run_once: true
+
+- name: Download nginx-ingress manifest
+  ansible.builtin.get_url:
+    url: "{{ ingress_nginx_url }}"
+    dest: /tmp/ingress-nginx-deploy.yaml
+    checksum: "{{ (ingress_nginx_sha256 != '') | ternary('sha256:' + ingress_nginx_sha256, omit) }}"
+  delegate_to: "{{ groups['k3s_server'][0] }}"
+  run_once: true
+
+- name: Install nginx-ingress controller
+  ansible.builtin.command: k3s kubectl apply -f /tmp/ingress-nginx-deploy.yaml
+  delegate_to: "{{ groups['k3s_server'][0] }}"
+  run_once: true

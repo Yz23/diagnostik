@@ -19,6 +19,11 @@ spec:
       labels:
         app: zookeeper
     spec:
+      serviceAccountName: zookeeper
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -51,6 +56,10 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           resources:
             requests:
               memory: "512Mi"
@@ -69,6 +78,7 @@ spec:
               command: ["zkServer.sh", "status"]
             initialDelaySeconds: 30
             periodSeconds: 30
+            failureThreshold: 5
   volumeClaimTemplates:
     - metadata:
         name: data

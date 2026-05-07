@@ -1,0 +1,127 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# opensearch-pki.yaml — PKI interne cert-manager pour OpenSearch
+# ══════════════════════════════════════════════════════════════════════════════
+# Ce fichier n'est PAS dans la kustomization base (pas auto-appliqué).
+# Il est appliqué par : bash scripts/bootstrap-cert-manager.sh --opensearch-pki
+# ou manuellement : kubectl apply -f k8s/base/cert-manager/opensearch-pki.yaml
+#
+# Séquence de bootstrap (cert-manager doit être installé) :
+#   1. SelfSigned ClusterIssuer → émet le certificat CA
+#   2. CA Certificate (isCA:true) → stocké dans Secret opensearch-ca-secret
+#   3. CA Issuer (namespace: data-platform) → utilise opensearch-ca-secret
+#   4. Certificate OpenSearch → crée/renouvelle automatiquement opensearch-tls-certs
+#
+# Le Secret opensearch-tls-certs est géré par cert-manager en production.
+# En dev, il est créé manuellement via : make secret-tls (scripts/generate-certs-dev.sh)
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Étape 1 : SelfSigned ClusterIssuer (bootstrapper) ────────────────────────
+# Utilisé uniquement pour émettre le certificat CA racine.
+# Il ne signe PAS directement les certificats OpenSearch.
+# NETTOYAGE : ce ClusterIssuer peut être supprimé après le bootstrap CA :
+#   kubectl delete clusterissuer selfsigned-issuer
+# (la CA Issuer data-platform suffit pour émettre des certificats OpenSearch)
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}
+---
+# ── Étape 2 : Certificat CA racine ────────────────────────────────────────────
+# CA dédiée à la data-platform. Durée 10 ans (CA interne — renouvellement planifié).
+# Crée le Secret opensearch-ca-secret dans le namespace data-platform.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: opensearch-ca
+  namespace: data-platform
+spec:
+  isCA: true
+  commonName: opensearch-root-ca.data-platform
+  subject:
+    organizations: [data-platform]
+  secretName: opensearch-ca-secret
+  duration: 87600h       # 10 ans
+  renewBefore: 8760h     # Renouveler 1 an avant expiry
+  privateKey:
+    algorithm: RSA
+    size: 4096
+    rotationPolicy: Never   # IMPORTANT : Never pour les CA — Always génèrerait une nouvelle clé
+                             # et invaliderait tous les certificats feuilles signés par l'ancienne CA.
+                             # cert-manager renouvelle le cert CA avec la même clé (extension de durée).
+  issuerRef:
+    name: selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+---
+# ── Étape 3 : CA Issuer (namespace data-platform) ─────────────────────────────
+# Utilise le Secret opensearch-ca-secret pour signer les certificats internes.
+# Namespace-scoped (Issuer, pas ClusterIssuer) — limite la portée au namespace.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: opensearch-ca-issuer
+  namespace: data-platform
+spec:
+  ca:
+    secretName: opensearch-ca-secret
+---
+# ── Étape 4 : Certificat TLS OpenSearch ───────────────────────────────────────
+# Crée et renouvelle automatiquement le Secret opensearch-tls-certs.
+# Utilisé par : OpenSearch nodes (transport + HTTP), Logstash, Dashboards.
+#
+# Les SANs couvrent tous les noms DNS internes du cluster :
+#   - Service ClusterIP (opensearch)
+#   - Headless services (opensearch-master-headless, opensearch-data-headless)
+#   - Service coordinator (opensearch-coordinator)
+#   - FQDNs complets avec namespace et domaine cluster
+#   - localhost (probes kubelet)
+#
+# Clés créées dans le Secret :
+#   tls.crt  — certificat (= pemcert dans OpenSearch config)
+#   tls.key  — clé privée (= pemkey dans OpenSearch config)
+#   ca.crt   — CA certificate (= pemtrustedcas dans OpenSearch config)
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: opensearch-tls
+  namespace: data-platform
+spec:
+  secretName: opensearch-tls-certs
+  duration: 8760h          # 1 an
+  renewBefore: 720h        # Renouveler 30 jours avant expiry
+  commonName: opensearch.data-platform
+  subject:
+    organizations: [data-platform]
+  dnsNames:
+    # Service principal
+    - opensearch
+    - opensearch.data-platform
+    - opensearch.data-platform.svc
+    - opensearch.data-platform.svc.cluster.local
+    # Nodes master (headless)
+    - opensearch-master-headless
+    - opensearch-master-headless.data-platform
+    - opensearch-master-headless.data-platform.svc
+    - opensearch-master-headless.data-platform.svc.cluster.local
+    # Nodes data (headless)
+    - opensearch-data-headless
+    - opensearch-data-headless.data-platform
+    - opensearch-data-headless.data-platform.svc
+    - opensearch-data-headless.data-platform.svc.cluster.local
+    # Coordinators
+    - opensearch-coordinator
+    - opensearch-coordinator.data-platform
+    - opensearch-coordinator.data-platform.svc
+    - opensearch-coordinator.data-platform.svc.cluster.local
+    # Probes et localhost
+    - localhost
+  privateKey:
+    algorithm: RSA
+    size: 3072
+    rotationPolicy: Always
+  issuerRef:
+    name: opensearch-ca-issuer
+    kind: Issuer
+    group: cert-manager.io

@@ -20,6 +20,11 @@ spec:
       labels:
         app: opensearch-dashboards
     spec:
+      serviceAccountName: opensearch-dashboards
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -38,7 +43,7 @@ spec:
               containerPort: 5601
           env:
             - name: OPENSEARCH_HOSTS
-              value: '["http://opensearch:9200"]'
+              value: '["https://opensearch:9200"]'
             - name: OPENSEARCH_USERNAME
               value: "admin"
             - name: OPENSEARCH_PASSWORD
@@ -50,6 +55,13 @@ spec:
             - name: config
               mountPath: /usr/share/opensearch-dashboards/config/opensearch_dashboards.yml
               subPath: opensearch_dashboards.yml
+            - name: tls-certs
+              mountPath: /usr/share/opensearch-dashboards/config/certs
+              readOnly: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
           resources:
             requests:
               memory: "512Mi"
@@ -75,3 +87,6 @@ spec:
         - name: config
           configMap:
             name: opensearch-dashboards-config
+        - name: tls-certs
+          secret:
+            secretName: opensearch-tls-certs

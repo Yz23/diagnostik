@@ -1,0 +1,296 @@
+# FIX M5 : Microsegmentation du namespace data-platform
+# Principe : deny-all par défaut, allow-list explicite par composant.
+
+---
+# Règle de base : tout le trafic inter-pod est interdit par défaut
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: data-platform
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+# OpenSearch : accepte le trafic depuis Logstash et Dashboards uniquement
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: opensearch-ingress
+  namespace: data-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: opensearch
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Transport inter-nœuds (9300)
+    - from:
+        - podSelector:
+            matchLabels:
+              app: opensearch
+      ports:
+        - port: 9300
+    # API HTTP (9200) depuis Logstash et Dashboards
+    - from:
+        - podSelector:
+            matchLabels:
+              app: logstash
+        - podSelector:
+            matchLabels:
+              app: opensearch-dashboards
+      ports:
+        - port: 9200
+  egress:
+    # Transport inter-nœuds sortant
+    - to:
+        - podSelector:
+            matchLabels:
+              app: opensearch
+      ports:
+        - port: 9300
+    # DNS
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# Logstash : accepte les logs depuis n'importe quel pod du namespace
+# et envoie vers OpenSearch uniquement
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: logstash-policy
+  namespace: data-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: logstash
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Ingestion de logs depuis pods internes (TCP/UDP 5000, Beats 5044, HTTP 8080)
+    # Namespaces autorisés : ajouter le label "data-platform/logs: allowed"
+    # kubectl label namespace <ns> data-platform/logs=allowed
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              data-platform/logs: allowed
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: data-platform
+      ports:
+        - port: 5000
+          protocol: TCP
+        - port: 5000
+          protocol: UDP
+        - port: 5044
+          protocol: TCP
+        - port: 8080
+          protocol: TCP
+  egress:
+    # Vers OpenSearch uniquement
+    - to:
+        - podSelector:
+            matchLabels:
+              app: opensearch
+      ports:
+        - port: 9200
+    # DNS
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# Dashboards : accès à OpenSearch, exposition vers l'Ingress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: opensearch-dashboards-policy
+  namespace: data-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: opensearch-dashboards
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Depuis l'ingress-nginx
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 5601
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: opensearch
+      ports:
+        - port: 9200
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# ZooKeeper : accessible par HDFS et YARN uniquement
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: zookeeper-policy
+  namespace: data-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: zookeeper
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: hdfs
+        - podSelector:
+            matchLabels:
+              app: yarn
+        - podSelector:
+            matchLabels:
+              app: zookeeper
+      ports:
+        - port: 2181
+        - port: 2888
+        - port: 3888
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: zookeeper
+      ports:
+        - port: 2888
+        - port: 3888
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# HDFS : communications internes (NameNode ↔ DataNode ↔ JournalNode ↔ YARN)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hdfs-policy
+  namespace: data-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: hdfs
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: hdfs
+        - podSelector:
+            matchLabels:
+              app: yarn
+      ports:
+        - port: 8020   # NameNode RPC
+        - port: 9870   # NameNode HTTP
+        - port: 8485   # JournalNode RPC
+        - port: 8480   # JournalNode HTTP
+        - port: 9866   # DataNode transfer
+        - port: 9864   # DataNode HTTP
+        - port: 9867   # DataNode IPC
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: hdfs
+        - podSelector:
+            matchLabels:
+              app: yarn
+        - podSelector:
+            matchLabels:
+              app: zookeeper
+    # NOUVEAU : allow NameNode pods to reach Kubernetes API for fencing script
+    # fence-namenode.sh calls https://kubernetes.default.svc:443
+    - ports:
+        - port: 443
+          protocol: TCP
+        - port: 6443
+          protocol: TCP
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# YARN : communications internes (RM ↔ NM ↔ HDFS ↔ HistoryServer)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: yarn-policy
+  namespace: data-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: yarn
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: yarn
+        - podSelector:
+            matchLabels:
+              app: hdfs
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 8032   # RM RPC
+        - port: 8033   # RM admin
+        - port: 8088   # RM HTTP
+        - port: 8030   # RM scheduler
+        - port: 8040   # NM localizer
+        - port: 8041   # NM RPC
+        - port: 8042   # NM HTTP
+        - port: 10020  # HistoryServer RPC
+        - port: 19888  # HistoryServer HTTP
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: yarn
+        - podSelector:
+            matchLabels:
+              app: hdfs
+        - podSelector:
+            matchLabels:
+              app: zookeeper
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
