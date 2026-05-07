@@ -3,7 +3,7 @@
 # ══════════════════════════════════════════════════════════════════════════════
 .PHONY: dev dev-down dev-logs validate lint secret secret-tls \
         deploy provision configure upgrade teardown check status help \
-        bootstrap-backend bootstrap-cert-manager configure-domain checksums setup
+        bootstrap-backend bootstrap-cert-manager configure-domain checksums setup sync-configs
 
 -include .env
 PROVIDER  ?= $(or $(PROVIDER),local)
@@ -16,6 +16,17 @@ COMPOSE   := docker compose -f docker/docker-compose.yml
 setup:
 	@find scripts/ -name "*.sh" -exec chmod +x {} \;
 	@echo "✓ Permissions +x restaurées sur les scripts."
+
+
+## Synchronise les fichiers de config dans k8s/base/ depuis leurs sources
+## (config/logstash/ et scripts/) — kustomize n'accepte que les fichiers
+## dans le répertoire kustomization ou en dessous.
+## Exécuter après toute modification de config/logstash/ ou scripts/fence-namenode.sh
+sync-configs:
+	@cp config/logstash/logstash.yml  k8s/base/config/logstash/logstash.yml
+	@cp config/logstash/pipeline.conf k8s/base/config/logstash/pipeline.conf
+	@cp scripts/fence-namenode.sh     k8s/base/scripts/fence-namenode.sh
+	@echo "✓ Configs synchronisées dans k8s/base/"
 
 
 # ── Dev local (Docker Compose) ────────────────────────────────────────────────
@@ -167,7 +178,7 @@ lint:
 	  ! -name "cluster-issuer*" \
 	  | xargs kubeconform -kubernetes-version 1.30.0 -strict -ignore-missing-schemas -summary
 	@for ov in gcp aws azure local; do \
-	  kustomize build --load-restrictor LoadRestrictionsNone k8s/overlays/$$ov > /dev/null && echo "  overlay $$ov ✓"; \
+	  kustomize build k8s/overlays/$$ov > /dev/null && echo "  overlay $$ov ✓"; \
 	done
 
 # ── Vérification des prérequis ────────────────────────────────────────────────

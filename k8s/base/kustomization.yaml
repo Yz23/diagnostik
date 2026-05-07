@@ -24,15 +24,17 @@ images:
 configMapGenerator:
   - name: logstash-config
     files:
-      - logstash.yml=../../config/logstash/logstash.yml
-      - main.conf=../../config/logstash/pipeline.conf
+      # Fichiers dans k8s/base/config/logstash/ — synchro via: make sync-configs
+      - logstash.yml=config/logstash/logstash.yml
+      - main.conf=config/logstash/pipeline.conf
     options:
       disableNameSuffixHash: true
   # FIX NOUVEAU BUG 2 : génère le ConfigMap hdfs-fence-script depuis le script source
   # Garantit que ConfigMap et scripts/fence-namenode.sh sont toujours synchrones
   - name: hdfs-fence-script
     files:
-      - fence-namenode.sh=../../scripts/fence-namenode.sh
+      # Fichier dans k8s/base/scripts/ — synchro via: make sync-configs
+      - fence-namenode.sh=scripts/fence-namenode.sh
     options:
       disableNameSuffixHash: true
 
