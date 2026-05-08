@@ -14,7 +14,7 @@ terraform {
 
 # TLS Proxmox : configurer un certificat valide sur l'API Proxmox avant de deployer
 # Option 1 : Let's Encrypt via le proxy Proxmox (recommande en production)
-# Option 2 : CA interne, pm_tls_insecure = false (defaut securise)
+# Option 2 : CA interne — pm_tls_insecure = false (defaut securise)
 # Pour CA auto-signee : ajouter pm_cafile = "/etc/ssl/certs/proxmox-ca.pem"
 provider "proxmox" {
   pm_api_url  = var.proxmox_api_url

@@ -1,4 +1,4 @@
-# Ansible — data-platform
+# DIAGNOSTIK — Ansible Playbooks
 
 Automatise la configuration des nœuds et le déploiement de la plateforme.
 

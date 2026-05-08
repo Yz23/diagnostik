@@ -1,4 +1,4 @@
-# Stack de développement local
+# DIAGNOSTIK — Stack de développement local
 
 Reproduit la stack complète (OpenSearch, Logstash, HDFS, YARN) en mode single-node,
 sans Kubernetes. Idéal pour le développement et les tests rapides.

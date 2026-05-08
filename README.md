@@ -2,9 +2,13 @@
 
 <br/>
 
-# diagnostix
+<img src="docs/assets/diagnostik-logo.png" alt="DIAGNOSTIK Logo" width="220"/>
 
-### Open Platform Data · IA Agnostic · Production-grade infrastructure for large-scale AI data collection & training pipelines
+<br/>
+
+# DIAGNOSTIK
+
+### Open Source Data & AI Stack
 
 <br/>
 
@@ -54,7 +58,9 @@ make help                          # toutes les commandes disponibles
 
 ## Purpose
 
-**Diagnostix** is an open, IA-agnostic data platform — designed to collect, store, process and index large volumes of data at scale for any AI workload. No vendor lock-in. Runs on GCP, AWS, Azure, or bare-metal Proxmox.
+**DIAGNOSTIK** — *Distributed Ingestion & Aggregation Grid — Native Open-Source Search, Transport & Intelligence on Kubernetes.*
+
+An open, IA-agnostic data platform designed to collect, store, process and index large volumes of data at scale for any AI workload. No vendor lock-in. Runs on GCP, AWS, Azure, or bare-metal Proxmox.
 
 The platform is built around three core concerns:
 
@@ -434,7 +440,7 @@ Every push and pull request triggers:
 
 ## Roadmap
 
-Diagnostix covers the infrastructure layer. The next phases:
+DIAGNOSTIK covers the infrastructure layer. The next phases:
 
 - [ ] Ingestion layer — pluggable scrapers (Scrapy / Playwright) writing to HDFS via Logstash
 - [ ] Processing layer — Apache Spark jobs on YARN for cleaning, deduplication, embedding
@@ -464,6 +470,10 @@ Diagnostix covers the infrastructure layer. The next phases:
 <div align="center">
 
 <br/>
+
+<img src="docs/assets/diagnostik-logo.png" alt="DIAGNOSTIK" width="80"/>
+
+**Search at scale. Built open.**
 
 Built with OpenSearch · Apache Hadoop · Kubernetes · Terraform · Ansible · Docker
 
