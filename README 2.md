@@ -20,10 +20,6 @@
 &nbsp;
 ![Hadoop](https://img.shields.io/badge/Hadoop-3.3.6-F5A623?logo=apache&logoColor=white)
 &nbsp;
-![Kafka](https://img.shields.io/badge/Kafka-3.8.0-231F20?logo=apachekafka&logoColor=white)
-&nbsp;
-![Spark](https://img.shields.io/badge/Spark-3.5.3-E25A1C?logo=apachespark&logoColor=white)
-&nbsp;
 ![Terraform](https://img.shields.io/badge/Terraform-1.7-7B42BC?logo=terraform&logoColor=white)
 &nbsp;
 ![Ansible](https://img.shields.io/badge/Ansible-2.16-EE0000?logo=ansible&logoColor=white)
@@ -70,8 +66,8 @@ The platform is built around three core concerns:
 
 | Concern | Answer |
 |---|---|
-| **Collect** at scale | Logstash ingestion pipeline · Kafka event bus · HDFS distributed storage |
-| **Process** at scale | Spark streaming/batch · YARN resource management · Hadoop-native compute |
+| **Collect** at scale | Logstash ingestion pipeline · HDFS distributed storage |
+| **Process** at scale | YARN resource management · Hadoop-native compute |
 | **Search & index** | OpenSearch cluster · Dashboards UI |
 
 > **Current phase — Infrastructure only.** The application layer (scrapers, ML training jobs, model serving) is not yet deployed. This repo establishes the foundation that will support it.
@@ -93,13 +89,7 @@ The platform is built around three core concerns:
   Data ingestion    │                                                  │
   Scrapers ──────►  │  ┌──────────────────── Ingest ────────────────┐  │
   Logstash          │  │  logstash  x2  [Deployment]                │  │
-  :5000 :5044 :8080 │  │  kafka     x3  [StatefulSet, KRaft]        │  │
-                    │  └────────────────────────────────────────────┘  │
-                    │                                                  │
-                    │  ┌────────────────── Processing ──────────────┐  │
-                    │  │  spark-history x1  [Deployment]            │  │
-                    │  │  spark drivers/executors via K8s API       │  │
-                    │  └────────────────────────────────────────────┘  │
+  :5000 :5044 :8080 │  └────────────────────────────────────────────┘  │
                     │                                                  │
                     │  ┌─────────────── Distributed Storage ────────┐  │
                     │  │  zookeeper      x3  [StatefulSet]          │  │
@@ -144,9 +134,7 @@ The Makefile is the single entry point. `config/` is the single source of truth 
 <img src="docs/assets/diagram-pipeline.png" alt="DIAGNOSTIK data pipeline" width="680"/>
 </div>
 
-Logstash ingests from TCP, Beats, and HTTP inputs. Kafka provides the durable event buffer for replayable ingestion and Spark consumes those streams for enrichment, batch processing, and future ML feature pipelines. Data lands in HDFS HA for storage and flows into OpenSearch for indexing + search. OpenSearch Dashboards provides visualization on port 5601.
-
-Kafka and Spark are added as separate, composable modules: `config/kafka/` and `config/spark/` are the source of truth, `k8s/base/kafka/` and `k8s/base/spark/` own their Kubernetes resources, and Docker Compose exposes a single-node dev path without changing production manifests.
+Logstash ingests from TCP, Beats, and HTTP inputs. Data flows into HDFS HA for storage + YARN for compute, and into OpenSearch for indexing + search. OpenSearch Dashboards provides visualization on port 5601.
 
 ---
 
@@ -166,8 +154,6 @@ Four concentric security layers: network perimeter (Ingress nginx + LoadBalancer
 |---|---|---|
 | **OpenSearch** | Elasticsearch | Security (auth, RBAC, TLS) built-in — no X-Pack license |
 | **HDFS HA** | MinIO / S3 | Native YARN integration for future Spark/MapReduce jobs |
-| **Kafka KRaft** | ZooKeeper-backed Kafka | Removes the extra coordination dependency for the event bus |
-| **Spark on Kubernetes** | Long-lived Spark standalone in prod | Atomic jobs with scoped RBAC, explicit resources, and clean isolation |
 | **YARN HA** | Kubernetes Jobs only | Resource isolation between ingestion and training workloads |
 | **Kustomize** | Helm | No templating language — overlays are plain YAML diffs |
 | **k3s (local)** | minikube / kind | Lightweight, production-like, runs on Proxmox VMs |
@@ -198,8 +184,6 @@ The `k8s/base/` layer is **100% provider-agnostic**. Kustomize overlays patch on
 │   │   ├── opensearch/                    ← master · data · coordinator · PDB
 │   │   ├── opensearch-dashboards/
 │   │   ├── logstash/                      ← TCP · Beats · HTTP inputs → OpenSearch
-│   │   ├── kafka/                         ← KRaft event bus · internal-only service
-│   │   ├── spark/                         ← HistoryServer · K8s driver/executor RBAC
 │   │   ├── hdfs/                          ← ZooKeeper · JournalNode · NameNode · DataNode
 │   │   ├── yarn/                          ← ResourceManager · NodeManager · HistoryServer
 │   │   └── ingress/                       ← nginx · sticky sessions · rate limiting
@@ -241,7 +225,7 @@ The `k8s/base/` layer is **100% provider-agnostic**. Kustomize overlays patch on
 │       └── azure/                         ← dynamic via azure.azcollection.azure_rm
 │
 ├── docker/                                ← Local dev stack (no Kubernetes needed)
-│   ├── docker-compose.yml                 ← Full stack single-node + Kafka + Spark
+│   ├── docker-compose.yml                 ← Full stack single-node
 │   ├── logstash/                          ← Pipeline config
 │   └── hadoop/                            ← Dev XML configs (replication=1, no HA)
 │
@@ -489,8 +473,8 @@ Every push and pull request triggers:
 
 DIAGNOSTIK covers the infrastructure layer. The next phases:
 
-- [ ] Ingestion layer — pluggable scrapers (Scrapy / Playwright) publishing to Kafka and Logstash
-- [ ] Processing layer — Spark streaming/batch jobs for cleaning, deduplication, embedding
+- [ ] Ingestion layer — pluggable scrapers (Scrapy / Playwright) writing to HDFS via Logstash
+- [ ] Processing layer — Apache Spark jobs on YARN for cleaning, deduplication, embedding
 - [ ] ML layer — MLflow for experiment tracking, DVC for dataset versioning
 - [ ] Model serving — API layer connecting to OpenSearch for inference-time retrieval
 

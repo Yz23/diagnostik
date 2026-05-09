@@ -5,13 +5,13 @@ metadata:
   namespace: data-platform
 spec:
   hard:
-    pods:                   "30"
-    requests.cpu:           "6"
-    limits.cpu:             "12"
-    requests.memory:        "12Gi"
-    limits.memory:          "16Gi"
-    persistentvolumeclaims: "20"
-    requests.storage:       "200Gi"
-    services:               "20"
-    configmaps:             "30"
-    secrets:                "20"
+    pods:                   "40"
+    requests.cpu:           "8"
+    limits.cpu:             "16"
+    requests.memory:        "16Gi"
+    limits.memory:          "24Gi"
+    persistentvolumeclaims: "24"
+    requests.storage:       "500Gi"
+    services:               "24"
+    configmaps:             "36"
+    secrets:                "24"

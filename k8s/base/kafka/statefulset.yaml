@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: data-platform
+  labels:
+    app: kafka
+spec:
+  serviceName: kafka-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kafka
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      serviceAccountName: kafka
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: kafka
+                topologyKey: kubernetes.io/hostname
+      containers:
+        - name: kafka
+          image: apache/kafka:3.8.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: internal
+              containerPort: 9092
+            - name: controller
+              containerPort: 9093
+          env:
+            - name: CLUSTER_ID
+              value: "MkU3OEVBNTcwNTJENDM2Qk"
+            - name: KAFKA_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-credentials
+                  key: KAFKA_ADMIN_PASSWORD
+            - name: KAFKA_CLIENT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-credentials
+                  key: KAFKA_CLIENT_PASSWORD
+          command: ["/bin/bash", "-ec"]
+          args:
+            - |
+              POD_ID="${HOSTNAME##*-}"
+              cp /kafka-config/server.properties /tmp/server.properties
+              cat >> /tmp/server.properties <<EOF
+              node.id=${POD_ID}
+              advertised.listeners=INTERNAL://${HOSTNAME}.kafka-headless.data-platform.svc.cluster.local:9092
+              controller.quorum.voters=0@kafka-0.kafka-headless.data-platform.svc.cluster.local:9093,1@kafka-1.kafka-headless.data-platform.svc.cluster.local:9093,2@kafka-2.kafka-headless.data-platform.svc.cluster.local:9093
+              EOF
+              cat > /tmp/kafka-jaas.conf <<EOF
+              KafkaServer {
+                org.apache.kafka.common.security.plain.PlainLoginModule required
+                username="admin"
+                password="${KAFKA_ADMIN_PASSWORD}"
+                user_admin="${KAFKA_ADMIN_PASSWORD}"
+                user_client="${KAFKA_CLIENT_PASSWORD}";
+              };
+              EOF
+              export KAFKA_OPTS="-Djava.security.auth.login.config=/tmp/kafka-jaas.conf"
+              /opt/kafka/bin/kafka-storage.sh format --ignore-formatted --cluster-id "${CLUSTER_ID}" --config /tmp/server.properties
+              exec /opt/kafka/bin/kafka-server-start.sh /tmp/server.properties
+          volumeMounts:
+            - name: config
+              mountPath: /kafka-config
+              readOnly: true
+            - name: data
+              mountPath: /var/lib/kafka/data
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1500m"
+          readinessProbe:
+            tcpSocket:
+              port: internal
+            initialDelaySeconds: 45
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: internal
+            initialDelaySeconds: 90
+            periodSeconds: 30
+            failureThreshold: 5
+      volumes:
+        - name: config
+          configMap:
+            name: kafka-config
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 100Gi

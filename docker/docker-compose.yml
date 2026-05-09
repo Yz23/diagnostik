@@ -8,6 +8,8 @@
 # UIs :
 #   OpenSearch Dashboards → http://localhost:5601
 #   OpenSearch API        → http://localhost:9200
+#   Kafka                 → 127.0.0.1:9092
+#   Spark Master UI       → http://localhost:18081
 #   HDFS NameNode UI      → http://localhost:9870
 #   YARN ResourceManager  → http://localhost:8088
 #
@@ -103,6 +105,98 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+  # ── Kafka (KRaft, single-node dev) ──────────────────────────────────────────
+  # CONFIG montée depuis ../config/kafka/ — source de vérité unique
+  kafka:
+    image: apache/kafka:${KAFKA_VERSION:-3.8.0}
+    container_name: kafka-dev
+    environment:
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_ADMIN_PASSWORD: ${KAFKA_ADMIN_PASSWORD:?Définir KAFKA_ADMIN_PASSWORD dans .env}
+      KAFKA_CLIENT_PASSWORD: ${KAFKA_CLIENT_PASSWORD:?Définir KAFKA_CLIENT_PASSWORD dans .env}
+    command:
+      - /bin/bash
+      - -ec
+      - |
+        cp /kafka-config/server.properties /tmp/server.properties
+        cat >> /tmp/server.properties <<EOF
+        node.id=0
+        advertised.listeners=INTERNAL://kafka:9092
+        controller.quorum.voters=0@kafka:9093
+        default.replication.factor=1
+        min.insync.replicas=1
+        offsets.topic.replication.factor=1
+        transaction.state.log.replication.factor=1
+        transaction.state.log.min.isr=1
+        EOF
+        cat > /tmp/kafka-jaas.conf <<EOF
+        KafkaServer {
+          org.apache.kafka.common.security.plain.PlainLoginModule required
+          username="admin"
+          password="$${KAFKA_ADMIN_PASSWORD}"
+          user_admin="$${KAFKA_ADMIN_PASSWORD}"
+          user_client="$${KAFKA_CLIENT_PASSWORD}";
+        };
+        EOF
+        export KAFKA_OPTS="-Djava.security.auth.login.config=/tmp/kafka-jaas.conf"
+        /opt/kafka/bin/kafka-storage.sh format --ignore-formatted --cluster-id "$${CLUSTER_ID}" --config /tmp/server.properties
+        exec /opt/kafka/bin/kafka-server-start.sh /tmp/server.properties
+    volumes:
+      - ../config/kafka/server.properties:/kafka-config/server.properties:ro
+      - kafka-data:/var/lib/kafka/data
+    ports:
+      - "127.0.0.1:9092:9092"
+    networks: [data-platform]
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9092 || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 6
+      start_period: 60s
+
+  # ── Spark standalone dev ────────────────────────────────────────────────────
+  # Spark production runs as K8s drivers/executors with the spark ServiceAccount.
+  spark-master:
+    image: apache/spark:${SPARK_VERSION:-3.5.3}
+    container_name: spark-master-dev
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master"]
+    environment:
+      SPARK_NO_DAEMONIZE: "true"
+      SPARK_MASTER_HOST: spark-master
+      SPARK_MASTER_PORT: "7077"
+      SPARK_MASTER_WEBUI_PORT: "8080"
+    volumes:
+      - ../config/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
+    ports:
+      - "127.0.0.1:7077:7077"
+      - "127.0.0.1:18081:8080"
+    networks: [data-platform]
+    depends_on:
+      kafka: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs http://localhost:8080 || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+
+  spark-worker:
+    image: apache/spark:${SPARK_VERSION:-3.5.3}
+    container_name: spark-worker-dev
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
+    environment:
+      SPARK_NO_DAEMONIZE: "true"
+      SPARK_WORKER_CORES: "2"
+      SPARK_WORKER_MEMORY: "2g"
+      SPARK_WORKER_WEBUI_PORT: "8081"
+    volumes:
+      - ../config/spark/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
+    ports:
+      - "127.0.0.1:18082:8081"
+    networks: [data-platform]
+    depends_on:
+      spark-master: { condition: service_healthy }
 
   # ── HDFS NameNode (dev, single-node) ─────────────────────────────────────────
   # CONFIG montée depuis ../config/hadoop/ — source de vérité unique
@@ -209,5 +303,6 @@ networks:
 
 volumes:
   opensearch-data:
+  kafka-data:
   hdfs-name:
   hdfs-data:
