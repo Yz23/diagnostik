@@ -19,12 +19,14 @@ setup:
 
 
 ## Sync config files into k8s/base/ from their sources
-## (config/logstash/ et scripts/) — kustomize only accepts files
+## (config/* et scripts/) — kustomize only accepts files
 ## in the kustomization directory or below.
-## Run after any modification to config/logstash/ or scripts/fence-namenode.sh
+## Run after any modification to config/ or scripts/fence-namenode.sh
 sync-configs:
 	@cp config/logstash/logstash.yml  k8s/base/config/logstash/logstash.yml
 	@cp config/logstash/pipeline.conf k8s/base/config/logstash/pipeline.conf
+	@cp config/kafka/server.properties k8s/base/config/kafka/server.properties
+	@cp config/spark/spark-defaults.conf k8s/base/config/spark/spark-defaults.conf
 	@cp scripts/fence-namenode.sh     k8s/base/scripts/fence-namenode.sh
 	@echo "✓ Configs synced to k8s/base/"
 
@@ -37,6 +39,8 @@ dev: .env
 	@echo ""
 	@echo "  Dashboards  → http://localhost:5601"
 	@echo "  OpenSearch  → http://localhost:9200"
+	@echo "  Kafka       → 127.0.0.1:9092"
+	@echo "  Spark UI    → http://localhost:18081"
 	@echo "  HDFS UI     → http://localhost:9870"
 	@echo "  YARN UI     → http://localhost:8088"
 

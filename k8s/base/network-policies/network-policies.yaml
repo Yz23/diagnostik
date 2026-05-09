@@ -104,6 +104,13 @@ spec:
               app: opensearch
       ports:
         - port: 9200
+    # Optional secure pipeline path: Logstash can publish to Kafka.
+    - to:
+        - podSelector:
+            matchLabels:
+              app: kafka
+      ports:
+        - port: 9092
     # DNS
     - ports:
         - port: 53
@@ -140,6 +147,109 @@ spec:
               app: opensearch
       ports:
         - port: 9200
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# Kafka : internal event bus, no external exposure.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kafka-policy
+  namespace: data-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: kafka
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: kafka
+        - podSelector:
+            matchLabels:
+              app: logstash
+        - podSelector:
+            matchLabels:
+              app: spark
+      ports:
+        - port: 9092
+        - port: 9093
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: kafka
+      ports:
+        - port: 9092
+        - port: 9093
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# Spark : processing plane, restricted to Kafka/HDFS/OpenSearch and K8s API.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: spark-policy
+  namespace: data-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: spark
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: spark
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 18080
+        - port: 4040
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: spark
+    - to:
+        - podSelector:
+            matchLabels:
+              app: kafka
+      ports:
+        - port: 9092
+    - to:
+        - podSelector:
+            matchLabels:
+              app: hdfs
+      ports:
+        - port: 8020
+        - port: 9866
+        - port: 9867
+    - to:
+        - podSelector:
+            matchLabels:
+              app: opensearch
+      ports:
+        - port: 9200
+    - ports:
+        - port: 443
+          protocol: TCP
+        - port: 6443
+          protocol: TCP
     - ports:
         - port: 53
           protocol: UDP

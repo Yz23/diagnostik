@@ -24,6 +24,8 @@ patches:
     target: { kind: StatefulSet, name: hdfs-namenode }
   - path: patches/storageclass.yaml
     target: { kind: StatefulSet, name: zookeeper }
+  - path: patches/storageclass.yaml
+    target: { kind: StatefulSet, name: kafka }
 
   # ── Replicas → 1 sur tous les StatefulSets multi-instances ─────────────────
   - path: patches/replicas-single.yaml
@@ -51,6 +53,10 @@ patches:
     target: { kind: StatefulSet, name: hdfs-namenode }
   - path: patches/resources-small.yaml
     target: { kind: StatefulSet, name: hdfs-datanode }
+  - path: patches/resources-small.yaml
+    target: { kind: StatefulSet, name: kafka }
+  - path: patches/resources-small.yaml
+    target: { kind: Deployment, name: spark-history }
 
   # ── HDFS replication=1 (1 seul DataNode en local) ────────────────────────────
   - path: patches/hdfs-replication-1.yaml

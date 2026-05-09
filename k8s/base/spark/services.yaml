@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-history
+  namespace: data-platform
+  labels:
+    app: spark
+    role: historyserver
+spec:
+  type: ClusterIP
+  selector:
+    app: spark
+    role: historyserver
+  ports:
+    - name: http
+      port: 18080
+      targetPort: http
