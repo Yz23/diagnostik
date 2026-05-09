@@ -81,10 +81,13 @@ app-test:
 	@$(APP_PYTHON) -m pytest apps/api/tests libs/diagnostik_common/tests connectors/mock/tests tests/integration
 
 app-security:
-	@echo "Run pip-audit, bandit, trivy and gitleaks in CI-enabled environments."
+	@mkdir -p .cache/pip-audit
+	@$(APP_PYTHON) -m pip_audit --cache-dir .cache/pip-audit
+	@$(APP_PYTHON) -m bandit -q -r apps libs connectors scripts -x "apps/api/tests,libs/diagnostik_common/tests,connectors/mock/tests,tests"
 
 app-dev: .env
-	@$(APP_COMPOSE) up --build
+	@echo "==> Diagnostik API POC → http://127.0.0.1:8000"
+	@$(APP_PYTHON) -m uvicorn app.main:app --app-dir apps/api --host 127.0.0.1 --port 8000
 
 app-bootstrap-indexes:
 	@$(APP_PYTHON) scripts/bootstrap_indexes.py

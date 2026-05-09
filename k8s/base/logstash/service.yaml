@@ -9,7 +9,7 @@ metadata:
   labels:
     app: logstash
   annotations:
-    # Prometheus scraping (if Prometheus Operator deployed in the cluster)
+    # Prometheus metrics collection (if Prometheus Operator is deployed)
     prometheus.io/scrape: "true"
     prometheus.io/port:   "9600"
     prometheus.io/path:   "/"

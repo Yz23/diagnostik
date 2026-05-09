@@ -2,7 +2,7 @@
 
 Public connectors must be generic, documented, rate-limited, and safe for community use.
 
-This repository intentionally does not include private business connectors, sensitive datasets, or social-network-specific scraping logic. Private extensions should live in a separate repository and be loaded through `DIAGNOSTIK_PLUGIN_PATH`.
+This repository intentionally does not include private business connectors, sensitive datasets, or private-domain-specific collector logic. Private extensions should live in a separate repository and be loaded through `DIAGNOSTIK_PLUGIN_PATH`.
 
 Included public connector scopes:
 

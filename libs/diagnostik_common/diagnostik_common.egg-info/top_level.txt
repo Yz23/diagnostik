@@ -1,2 +1,0 @@
-diagnostik_common
-tests

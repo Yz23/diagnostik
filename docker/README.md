@@ -53,9 +53,9 @@ Key variables:
 
 | Variable | Description |
 |---|---|
-| `OPENSEARCH_INITIAL_ADMIN_PASSWORD` | Admin password (min 16 chars, 1 upper, 1 digit, 1 symbol) |
-| `KAFKA_ADMIN_PASSWORD` | Dev Kafka admin password |
-| `KAFKA_CLIENT_PASSWORD` | Dev Kafka client password |
+| `OPENSEARCH_INITIAL_ADMIN_PASSWORD` | OpenSearch admin secret, set locally in `.env` |
+| `KAFKA_ADMIN_PASSWORD` | Kafka admin secret, set locally in `.env` |
+| `KAFKA_CLIENT_PASSWORD` | Kafka client secret, set locally in `.env` |
 | `OS_MASTER_HEAP` | OpenSearch JVM heap (default: 1g) |
 | `LS_HEAP_SIZE` | Logstash JVM heap (default: 1g) |
 | `HDFS_NAMENODE_HEAP` | HDFS NameNode JVM heap (default: 1g) |
