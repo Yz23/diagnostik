@@ -1,0 +1,19 @@
+# Pipelines
+
+Pipelines are YAML files made of ordered steps:
+
+```yaml
+name: default_text_indexing
+version: 1
+steps:
+  - name: validate_document
+    type: validation
+  - name: normalize_text
+    type: transform
+  - name: create_text_embedding
+    type: embedding
+    model: mock-hash-embedding
+  - name: index_opensearch
+    type: indexing
+    index: diagnostik-documents-v1
+```

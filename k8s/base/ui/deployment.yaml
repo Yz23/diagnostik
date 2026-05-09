@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: diagnostik-ui
+  namespace: data-platform
+  labels:
+    app: diagnostik-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: diagnostik-ui
+  template:
+    metadata:
+      labels:
+        app: diagnostik-ui
+    spec:
+      serviceAccountName: diagnostik-ui
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: ui
+          image: diagnostik/ui:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8501
+          envFrom:
+            - configMapRef:
+                name: diagnostik-ui-config
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"

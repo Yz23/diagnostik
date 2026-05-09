@@ -1,0 +1,8 @@
+connector: api_generic
+url: https://api.example.org/public/items
+method: GET
+headers_from_env: []
+pagination:
+  type: page
+  page_param: page
+rate_limit_per_minute: 30

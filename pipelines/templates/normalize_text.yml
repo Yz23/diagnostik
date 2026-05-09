@@ -1,0 +1,5 @@
+name: normalize_text
+version: 1
+steps:
+  - name: normalize_text
+    type: transform

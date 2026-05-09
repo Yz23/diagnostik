@@ -1,0 +1,5 @@
+name: extract_metadata
+version: 1
+steps:
+  - name: enrich_metadata
+    type: enrichment
