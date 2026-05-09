@@ -1,0 +1,4 @@
+connector: file
+path: ./data/example.jsonl
+format: jsonl
+dataset_id: local-files

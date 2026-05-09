@@ -1,0 +1,6 @@
+name: create_embeddings
+version: 1
+steps:
+  - name: create_text_embedding
+    type: embedding
+    model: mock-hash-embedding

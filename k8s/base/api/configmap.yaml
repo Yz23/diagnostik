@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: diagnostik-api-config
+  namespace: data-platform
+  labels:
+    app: diagnostik-api
+data:
+  DIAGNOSTIK_ENVIRONMENT: production
+  DIAGNOSTIK_AUTH_MODE: api_key
+  DIAGNOSTIK_OPENSEARCH_URL: https://opensearch:9200
+  DIAGNOSTIK_DOCUMENTS_INDEX: diagnostik-documents-write
+  DIAGNOSTIK_CORS_ORIGINS: https://diagnostik.REPLACE_WITH_YOUR_DOMAIN

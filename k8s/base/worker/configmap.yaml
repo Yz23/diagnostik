@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: diagnostik-worker-config
+  namespace: data-platform
+  labels:
+    app: diagnostik-worker
+data:
+  DIAGNOSTIK_ENVIRONMENT: production
+  DIAGNOSTIK_OPENSEARCH_URL: https://opensearch:9200

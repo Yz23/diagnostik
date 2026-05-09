@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: diagnostik-api
+  namespace: data-platform
+  labels:
+    app: diagnostik-api
+spec:
+  type: ClusterIP
+  selector:
+    app: diagnostik-api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

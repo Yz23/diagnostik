@@ -3,12 +3,19 @@
 # ══════════════════════════════════════════════════════════════════════════════
 .PHONY: dev dev-down dev-logs validate lint secret secret-tls \
         deploy provision configure upgrade teardown check status help \
-        bootstrap-backend bootstrap-cert-manager configure-domain checksums setup sync-configs
+        bootstrap-backend bootstrap-cert-manager configure-domain checksums setup sync-configs \
+        app-install app-format app-lint app-typecheck app-test app-security app-dev \
+        app-bootstrap-indexes app-ingest-mock app-run-pipeline app-search-demo app-e2e
 
--include .env
+ifneq (,$(wildcard .env))
+include .env
+endif
 PROVIDER  ?= $(or $(PROVIDER),local)
 NS        := data-platform
 COMPOSE   := docker compose -f docker/docker-compose.yml
+APP_COMPOSE := docker compose -f docker/docker-compose.apps.yml
+APP_PYTHON := PYTHONPATH=.:apps/api:libs/diagnostik_common .venv/bin/python
+APP_PIP := .venv/bin/python -m pip
 
 # ── Setup initial (permissions) ───────────────────────────────────────────────
 ## Restore executable permissions on scripts (after git clone or unzip)
@@ -53,6 +60,46 @@ dev-logs:
 .env:
 	@echo "ERROR: .env missing. Run:  cp .env.example .env"
 	@exit 1
+
+# ── Diagnostik Community App ────────────────────────────────────────────────
+
+app-install:
+	@python3 -m venv .venv
+	@$(APP_PIP) install --upgrade pip
+	@$(APP_PIP) install -e libs/diagnostik_common -e "apps/api[dev]" -e apps/worker
+
+app-format:
+	@.venv/bin/ruff format apps libs connectors scripts tests
+
+app-lint:
+	@$(APP_PYTHON) -m ruff check apps libs connectors scripts tests
+
+app-typecheck:
+	@$(APP_PYTHON) -m mypy apps/api/app libs/diagnostik_common/diagnostik_common connectors/mock
+
+app-test:
+	@$(APP_PYTHON) -m pytest apps/api/tests libs/diagnostik_common/tests connectors/mock/tests tests/integration
+
+app-security:
+	@echo "Run pip-audit, bandit, trivy and gitleaks in CI-enabled environments."
+
+app-dev: .env
+	@$(APP_COMPOSE) up --build
+
+app-bootstrap-indexes:
+	@$(APP_PYTHON) scripts/bootstrap_indexes.py
+
+app-ingest-mock:
+	@$(APP_PYTHON) scripts/app_ingest_mock.py
+
+app-run-pipeline:
+	@$(APP_PYTHON) scripts/app_run_pipeline.py
+
+app-search-demo:
+	@$(APP_PYTHON) scripts/app_search_demo.py
+
+app-e2e: app-bootstrap-indexes app-ingest-mock app-run-pipeline app-search-demo
+	@echo "✓ App E2E flow completed."
 
 # ── Secrets K8s ───────────────────────────────────────────────────────────────
 
@@ -256,6 +303,7 @@ help:
 	@echo "  CI / validation"
 	@echo "    make validate                 kubeconform + kustomize + terraform fmt"
 	@echo "    make lint                     kubeconform + kustomize build"
+	@echo "    make app-test                 Run community app unit tests"
 	@echo ""
 	@echo "  Provider : PROVIDER=gcp|aws|azure|local  (current: $(PROVIDER))"
 	@echo ""

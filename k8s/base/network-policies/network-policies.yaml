@@ -154,6 +154,115 @@ spec:
           protocol: TCP
 
 ---
+# Diagnostik API: receives UI/Ingress traffic and reaches OpenSearch/Kafka.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: diagnostik-api-policy
+  namespace: data-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: diagnostik-api
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: diagnostik-ui
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 8000
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: opensearch
+      ports:
+        - port: 9200
+    - to:
+        - podSelector:
+            matchLabels:
+              app: kafka
+      ports:
+        - port: 9092
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# Diagnostik worker: asynchronous execution plane.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: diagnostik-worker-policy
+  namespace: data-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: diagnostik-worker
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: kafka
+      ports:
+        - port: 9092
+    - to:
+        - podSelector:
+            matchLabels:
+              app: opensearch
+      ports:
+        - port: 9200
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# Diagnostik UI: only talks to API and receives ingress traffic.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: diagnostik-ui-policy
+  namespace: data-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: diagnostik-ui
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - port: 8501
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: diagnostik-api
+      ports:
+        - port: 8000
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
 # Kafka : internal event bus, no external exposure.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

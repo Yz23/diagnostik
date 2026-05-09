@@ -1,0 +1,39 @@
+services:
+  diagnostik-api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    environment:
+      DIAGNOSTIK_ENVIRONMENT: local
+      DIAGNOSTIK_AUTH_MODE: none
+      DIAGNOSTIK_OPENSEARCH_URL: http://opensearch:9200
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks: [data-platform]
+
+  diagnostik-worker:
+    build:
+      context: ..
+      dockerfile: apps/worker/Dockerfile
+    environment:
+      DIAGNOSTIK_ENVIRONMENT: local
+    networks: [data-platform]
+
+  diagnostik-ui:
+    image: python:3.11-slim
+    working_dir: /app
+    command: >
+      sh -c "pip install --no-cache-dir streamlit requests &&
+             streamlit run apps/ui/streamlit_app.py --server.address 0.0.0.0 --server.port 8501"
+    volumes:
+      - ..:/app:ro
+    ports:
+      - "127.0.0.1:8501:8501"
+    networks: [data-platform]
+    depends_on:
+      - diagnostik-api
+
+networks:
+  data-platform:
+    name: diagnostik_apps
+    driver: bridge

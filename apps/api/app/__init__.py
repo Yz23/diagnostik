@@ -1,0 +1,1 @@
+"""Diagnostik API package."""

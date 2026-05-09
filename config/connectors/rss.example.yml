@@ -1,0 +1,4 @@
+connector: rss
+feed_url: https://example.org/feed.xml
+dataset_id: public-rss
+rate_limit_per_minute: 10
