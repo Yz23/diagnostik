@@ -80,7 +80,7 @@ spec:
               cpu: "1000m"
           # FIX: exec probe uses $OPENSEARCH_INITIAL_ADMIN_PASSWORD env var already on the container
           # instead of hardcoded admin:admin (Base64: YWRtaW46YWRtaW4=) which is WRONG
-          # FIX C3 : startupProbe — 10 min pour le premier démarrage avant livenessProbe
+          # FIX C3 : startupProbe — 10 min for first startup before livenessProbe
           startupProbe:
             exec:
               command:
@@ -126,5 +126,5 @@ spec:
         - name: tls-certs
           secret:
             secretName: opensearch-tls-certs
-            # Créer avec : make secret-tls  (ou : bash scripts/generate-certs-dev.sh)
+            # Create with: make secret-tls  (or: bash scripts/generate-certs-dev.sh)
             # En prod    : cert-manager alimente ce Secret automatiquement

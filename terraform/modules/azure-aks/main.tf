@@ -26,15 +26,15 @@ resource "azurerm_kubernetes_cluster" "aks" {
   kubernetes_version  = "1.30"
 
   default_node_pool {
-    name                 = "general"
-    node_count           = var.general_node_count
-    vm_size              = var.general_vm_size
-    os_disk_size_gb      = 100
-    type                 = "VirtualMachineScaleSets"
-    auto_scaling_enabled = true
-    min_count            = 1
-    max_count            = 6
-    node_labels          = { role = "general" }
+    name                = "general"
+    node_count          = var.general_node_count
+    vm_size             = var.general_vm_size
+    os_disk_size_gb     = 100
+    type                = "VirtualMachineScaleSets"
+    enable_auto_scaling = true
+    min_count           = 1
+    max_count           = 6
+    node_labels         = { role = "general" }
   }
 
   identity {
@@ -53,7 +53,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "data" {
   vm_size               = var.data_vm_size
   node_count            = var.data_node_count
   os_disk_size_gb       = 500
-  auto_scaling_enabled  = true
+  enable_auto_scaling   = true
   min_count             = 3
   max_count             = 12
   node_labels           = { role = "hadoop-data" }

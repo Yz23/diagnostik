@@ -18,15 +18,15 @@ data:
     plugins.security.disabled: false
 
     # FIX C1 : Remplacer les demo-certs par de vrais certificats.
-    # Générer avec scripts/generate-certs.sh ou via cert-manager.
-    # Les fichiers doivent être montés via un Secret Kubernetes.
-    # cert-manager crée ces clés dans le Secret opensearch-tls-certs
-    # (noms standards : tls.crt / tls.key / ca.crt)
+    # Generate with scripts/generate-certs.sh ou via cert-manager.
+    # Files must be mounted via a Kubernetes Secret.
+    # cert-manager creates these keys in the opensearch-tls-certs Secret
+    # (standard names: tls.crt / tls.key / ca.crt)
     plugins.security.ssl.transport.pemcert_filepath: /usr/share/opensearch/config/certs/tls.crt
     plugins.security.ssl.transport.pemkey_filepath: /usr/share/opensearch/config/certs/tls.key
     plugins.security.ssl.transport.pemtrustedcas_filepath: /usr/share/opensearch/config/certs/ca.crt
 
-    # FIX M2 : Activer la vérification du hostname dans les certs TLS transport
+    # Enable hostname verification in transport TLS certs
     plugins.security.ssl.transport.enforce_hostname_verification: true
 
     # FIX C1 : Activer TLS sur l'API HTTP (port 9200)
@@ -35,7 +35,7 @@ data:
     plugins.security.ssl.http.pemkey_filepath: /usr/share/opensearch/config/certs/tls.key
     plugins.security.ssl.http.pemtrustedcas_filepath: /usr/share/opensearch/config/certs/ca.crt
 
-    # FIX C1 : Désactiver les demo-certs (dangereux en production)
+    # Disable demo-certs (dangerous in production)
     plugins.security.allow_unsafe_democertificates: false
     plugins.security.allow_default_init_securityindex: true
 
@@ -45,14 +45,14 @@ data:
     plugins.security.restapi.roles_enabled: ["all_access","security_rest_api_access"]
     indices.query.bool.max_clause_count: 10000
 
-  # ── NOTE OPÉRATIONNELLE ──────────────────────────────────────
-  # Prérequis pour activer TLS :
-  # 1. Générer les certificats (exemple avec OpenSSL ou cert-manager)
-  # 2. Créer le Secret opensearch-tls-certs :
-  #    DEV   : make secret-tls   (génère avec OpenSSL)
-  #    PROD  : make bootstrap-cert-manager + --opensearch-pki   (cert-manager gère)
-  #    Clés attendues : tls.crt, tls.key, ca.crt
+  # ── OPERATIONAL NOTE ──────────────────────────────────────
+  # Prerequisites to enable TLS :
+  # 1. Generate certificates (example with OpenSSL or cert-manager)
+  # 2. Create the opensearch-tls-certs Secret :
+  #    DEV  : make secret-tls   (generates with OpenSSL)
+  #    PROD : make bootstrap-cert-manager + --opensearch-pki   (cert-manager manages)
+  #    Expected keys: tls.crt, tls.key, ca.crt
   # 3. Monter ce Secret dans chaque pod OpenSearch sous
   #    /usr/share/opensearch/config/certs/
-  # 4. Mettre à jour Logstash et Dashboards pour utiliser HTTPS
-  #    et référencer la CA (voir logstash configmap et dashboards configmap)
+  # 4. Update Logstash and Dashboards to use HTTPS
+  #    et reference the CA (see logstash configmap and dashboards configmap)

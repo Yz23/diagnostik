@@ -1,8 +1,8 @@
 # FIX M5 : Microsegmentation du namespace data-platform
-# Principe : deny-all par défaut, allow-list explicite par composant.
+# Principle: deny-all by default, explicit allow-list per component.
 
 ---
-# Règle de base : tout le trafic inter-pod est interdit par défaut
+# Base rule: all inter-pod traffic is denied by default
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -29,7 +29,7 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # Transport inter-nœuds (9300)
+    # Inter-node transport (9300)
     - from:
         - podSelector:
             matchLabels:
@@ -47,7 +47,7 @@ spec:
       ports:
         - port: 9200
   egress:
-    # Transport inter-nœuds sortant
+    # Outbound inter-node transport
     - to:
         - podSelector:
             matchLabels:
@@ -78,7 +78,7 @@ spec:
     - Egress
   ingress:
     # Ingestion de logs depuis pods internes (TCP/UDP 5000, Beats 5044, HTTP 8080)
-    # Namespaces autorisés : ajouter le label "data-platform/logs: allowed"
+    # Authorized namespaces: add the label "data-platform/logs: allowed"
     # kubectl label namespace <ns> data-platform/logs=allowed
     - from:
         - namespaceSelector:
@@ -112,7 +112,7 @@ spec:
           protocol: TCP
 
 ---
-# Dashboards : accès à OpenSearch, exposition vers l'Ingress
+# Dashboards: access to OpenSearch, exposed to Ingress
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -230,7 +230,7 @@ spec:
         - podSelector:
             matchLabels:
               app: zookeeper
-    # NOUVEAU : allow NameNode pods to reach Kubernetes API for fencing script
+    # Allow NameNode pods to reach Kubernetes API for fencing script
     # fence-namenode.sh calls https://kubernetes.default.svc:443
     - ports:
         - port: 443

@@ -2,10 +2,10 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 # ── Overlay local — k3s single-node (dev / Proxmox) ──────────────────────────
-# Différences vs cloud :
-#   • Tous les StatefulSets multi-replicas réduits à 1
+# Differences vs cloud:
+#   • All multi-replica StatefulSets reduced to 1
 #   • OpenSearch en mode single-node (pas de quorum)
-#   • Resources mémoire réduites (resources-small)
+#   • Memory resources reduced (resources-small)
 #   • StorageClass : local-path (provisioner k3s)
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -42,7 +42,7 @@ patches:
   # ── OpenSearch master : single-node + 1 replica ─────────────────────────────
   - path: patches/opensearch-single-node.yaml
 
-  # ── Resources mémoire réduites ───────────────────────────────────────────────
+  # ── Memory resources reduced ───────────────────────────────────────────────
   - path: patches/resources-small.yaml
     target: { kind: StatefulSet, name: opensearch-master }
   - path: patches/resources-small.yaml
@@ -59,5 +59,5 @@ patches:
   # ── FIX B3 : NameNode init attend 1 seul JournalNode en local ────────────────
   - path: patches/namenode-wait-single-journalnode.yaml
 
-  # FIX C2 : ResourceQuota adapté au local (remplace les 80Gi de la base)
+  # FIX C2 : ResourceQuota adapted for local (replaces the 80Gi base)
   - path: patches/resource-quota-small.yaml

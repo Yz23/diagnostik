@@ -42,20 +42,20 @@ data:
       <!--
         FENCING K8S-NATIF :
         Le script /scripts/fence-namenode.sh utilise l'API Kubernetes pour
-        force-delete le pod NameNode défaillant (gracePeriodSeconds=0).
+        force-delete the failing NameNode pod (gracePeriodSeconds=0).
 
-        Flux : ZKFC détecte la perte de leadership ZK → appelle fence-namenode.sh
-        avec le DNS du NN à fencer → script DELETE le pod via l'API K8s → pod mort.
+        Flow: ZKFC detects ZK leadership loss → calls fence-namenode.shh
+        with the NN DNS to fence → script DELETEs the pod via K8s API → pod is removedrt.
 
-        Fallback shell(/bin/true) : si le script échoue (ex: pod déjà supprimé,
-        API K8s indisponible), on accepte le failover quand même. ZKFC + ZK
-        assurent qu'un seul NN peut écrire dans ZK comme actif simultanément.
+        Fallback shell(/bin/true): if the script fails (e.g. pod already deleted,
+        K8s API unavailable), we accept the failover anyway. ZKFC + ZK
+        ensure only one NN can write to ZK as active simultaneously.
 
-        Prérequis :
-          • ConfigMap hdfs-fence-script monté dans le pod NameNode
+        Prerequisites:
+          • hdfs-fence-script ConfigMap mounted in the NameNode pod
           • ServiceAccount hdfs-namenode avec automountServiceAccountToken: true
           • RBAC Role hdfs-namenode-fencer : pods/delete dans le namespace
-          • Variable d'env POD_NAMESPACE injectée via Downward API
+          • POD_NAMESPACE env var injected via Downward API
       -->
       <property>
         <name>dfs.ha.fencing.methods</name>

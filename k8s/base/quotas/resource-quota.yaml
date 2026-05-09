@@ -1,5 +1,5 @@
-# ResourceQuota + LimitRange — protection contre les workloads non bornés.
-# Sans ces objets, un pod sans limits peut consommer toute la RAM du nœud.
+# ResourceQuota + LimitRange — protection against unbounded workloads.
+# Without these objects, a pod without limits can consume all node RAM.
 
 apiVersion: v1
 kind: ResourceQuota
@@ -13,7 +13,7 @@ spec:
     # CPU
     requests.cpu:            "24"
     limits.cpu:              "48"
-    # Mémoire
+    # Memory
     requests.memory:         "80Gi"
     limits.memory:           "128Gi"
     # Stockage
@@ -33,7 +33,7 @@ metadata:
   namespace: data-platform
 spec:
   limits:
-    # Défauts pour les containers sans requests/limits explicites
+    # Defaults for containers without explicit requests/limits
     - type: Container
       default:
         cpu:    "500m"
@@ -47,7 +47,7 @@ spec:
       min:
         cpu:    "50m"
         memory: "64Mi"
-    # Limite pour les PVCs (éviter les volumes géants accidentels)
+    # Limit for PVCs (avoid accidentally large volumes)
     - type: PersistentVolumeClaim
       max:
         storage: "600Gi"

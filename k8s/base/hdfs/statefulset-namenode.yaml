@@ -22,8 +22,8 @@ spec:
         app: hdfs
         role: namenode
     spec:
-      # FIX M6 : contexte de sécurité pod
-      # SA dédié avec automount token pour le fencing K8s-natif
+      # Pod security context
+      # Dedicated SA with automount token for K8s-native fencing
       serviceAccountName: hdfs-namenode
       securityContext:
         runAsNonRoot: true
@@ -47,7 +47,7 @@ spec:
               until nc -z hdfs-journalnode-0.hdfs-journalnode-headless 8485; do sleep 3; done
               until nc -z hdfs-journalnode-1.hdfs-journalnode-headless 8485; do sleep 3; done
               until nc -z hdfs-journalnode-2.hdfs-journalnode-headless 8485; do sleep 3; done
-          # FIX M6 : pas de privilèges élevés pour le init container de wait
+          # No elevated privileges for the wait init container
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -93,7 +93,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name
-          # FIX M6 : contexte de sécurité container
+          # Container security context
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -135,7 +135,7 @@ spec:
         - name: fence-script
           configMap:
             name: hdfs-fence-script
-            defaultMode: 0755  # exécutable
+            defaultMode: 0755  # executable
   volumeClaimTemplates:
     - metadata:
         name: namenode-data

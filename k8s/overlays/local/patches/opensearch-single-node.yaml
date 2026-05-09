@@ -1,6 +1,6 @@
 # Force OpenSearch en mode single-node (1 seul pod master, pas de quorum requis).
 # On set discovery.type=single-node ET on retire cluster.initial_master_nodes
-# (une valeur vide "" causerait une erreur OpenSearch au démarrage).
+# (an empty value "" would cause an OpenSearch startup error).
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:

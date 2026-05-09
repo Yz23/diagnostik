@@ -1,6 +1,6 @@
 # ── Service TCP ───────────────────────────────────────────────────────────────
-# FIX : K8s ne supporte pas le même numéro de port avec des protocoles différents
-# dans un seul Service. On sépare TCP et UDP en deux Services distincts.
+# FIX : K8s does not support the same port number with different protocolss
+# in a single Service. Splitting TCP and UDP into two separate Services.
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,7 +9,7 @@ metadata:
   labels:
     app: logstash
   annotations:
-    # Prometheus scraping (si Prometheus Operator déployé dans le cluster)
+    # Prometheus scraping (if Prometheus Operator deployed in the cluster)
     prometheus.io/scrape: "true"
     prometheus.io/port:   "9600"
     prometheus.io/path:   "/"
@@ -35,7 +35,7 @@ spec:
       targetPort: 9600
       protocol: TCP
 ---
-# ── Service UDP séparé ────────────────────────────────────────────────────────
+# ── Separate UDP Service ────────────────────────────────────────────────────────
 apiVersion: v1
 kind: Service
 metadata:

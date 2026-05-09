@@ -1,63 +1,72 @@
 # DIAGNOSTIK — Ansible Playbooks
 
-Automatise la configuration des nœuds et le déploiement de la plateforme.
+Automates node configuration and platform deployment.
 
-## Rôle de chaque playbook
+## Playbook overview
 
-| Playbook | Cible | Description |
+| Playbook | Target | Description |
 |---|---|---|
-| `00-preflight.yml` | tous | Vérifie OS, RAM, disk, SSH — sans rien modifier |
-| `01-base-setup.yml` | tous | sysctl, ulimits, kernel modules, containerd |
-| `02-k3s-cluster.yml` | Proxmox/local | Installe k3s server + agents + labels/taints |
-| `03-cloud-node-config.yml` | GCP/AWS/Azure | sysctl + ulimits sur nœuds managés |
+| `00-preflight.yml` | all | Checks OS, RAM, disk, SSH — no changes made |
+| `01-base-setup.yml` | all | sysctl, ulimits, kernel modules, containerd |
+| `02-k3s-cluster.yml` | Proxmox/local | Installs k3s server + agents + labels/taints |
+| `03-cloud-node-config.yml` | GCP/AWS/Azure | sysctl + ulimits on managed nodes |
 | `04-deploy-platform.yml` | localhost | `kustomize build` + `kubectl apply` |
 
-## Workflow complet — Proxmox/local
+## Full workflow — Proxmox/local
 
 ```bash
 cd ansible/
 
-# 1. Installer les collections Ansible
+# 1. Install Ansible collections
 ansible-galaxy collection install -r requirements.yml
 
-# 2. Éditer l'inventaire
-nano inventories/proxmox/hosts.yml  # remplir les IPs
+# 2. Edit inventory
+nano inventories/proxmox/hosts.yml  # fill in IPs
 
-# 3. Vérifications préalables (rien n'est modifié)
+# 3. Pre-flight checks (no changes made)
 ansible-playbook -i inventories/proxmox/ playbooks/00-preflight.yml
 
-# 4. Configurer le système de base
+# 4. Configure base system
 ansible-playbook -i inventories/proxmox/ playbooks/01-base-setup.yml
 
-# 5. Installer k3s
+# 5. Install k3s cluster
 ansible-playbook -i inventories/proxmox/ playbooks/02-k3s-cluster.yml
-# → génère kubeconfig-server-0.yaml à la racine du repo
 
-# 6. Configurer kubectl
-export KUBECONFIG=$(pwd)/../kubeconfig-server-0.yaml
-
-# 7. Créer les secrets
+# 6. Deploy the platform
 export OPENSEARCH_INITIAL_ADMIN_PASSWORD='YourStr0ng!Pass1'
 bash ../scripts/create-secrets.sh
-
-# 8. Déployer la plateforme
-PROVIDER=local ansible-playbook playbooks/04-deploy-platform.yml
+ansible-playbook -i inventories/proxmox/ playbooks/04-deploy-platform.yml
 ```
 
-## Workflow — GCP/AWS/Azure (nœuds managés)
+## Full workflow — Cloud (GCP/AWS/Azure)
 
 ```bash
-# Sur GKE/EKS/AKS, k3s n'est pas nécessaire.
-# On configure uniquement le système et on déploie.
+# Nodes already provisioned by Terraform
 
-# Configurer kubectl (après terraform apply)
-$(terraform -chdir=terraform/modules/gcp-gke output -raw kubeconfig_cmd)
+cd ansible/
+ansible-galaxy collection install -r requirements.yml
 
-# Optionnel : configurer sysctl/ulimits si accès SSH aux nœuds
+# Cloud nodes are already configured by the provider
+# Only run config + deploy:
 ansible-playbook -i inventories/gcp/ playbooks/03-cloud-node-config.yml
-
-# Déployer
-export OPENSEARCH_INITIAL_ADMIN_PASSWORD='YourStr0ng!Pass1'
-bash scripts/create-secrets.sh
-PROVIDER=gcp ansible-playbook ansible/playbooks/04-deploy-platform.yml
+ansible-playbook -i inventories/gcp/ playbooks/04-deploy-platform.yml
 ```
+
+## Inventories
+
+| Directory | Provider | Notes |
+|---|---|---|
+| `inventories/proxmox/` | k3s / Proxmox | Static inventory — fill IPs manually |
+| `inventories/gcp/` | GKE | Dynamic via `google.cloud.gcp_compute` |
+| `inventories/aws/` | EKS | Dynamic via `amazon.aws.aws_ec2` |
+| `inventories/azure/` | AKS | Dynamic via `azure.azcollection.azure_rm` |
+
+## Roles
+
+| Role | Description |
+|---|---|
+| `common` | sysctl tuning, ulimits, swap disabled, kernel modules |
+| `containerd` | Container runtime install (SystemdCgroup) |
+| `k3s-server` | k3s control-plane install + kubeconfig fetch |
+| `k3s-agent` | Data node join to k3s cluster |
+| `k8s-node-config` | Node labels, taints, local-path, ingress-nginx |

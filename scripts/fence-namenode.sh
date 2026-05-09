@@ -1,28 +1,28 @@
 #!/bin/bash
 # ══════════════════════════════════════════════════════════════════════════════
-# fence-namenode.sh — Fencing K8s-natif pour HDFS NameNode HA
+# fence-namenode.sh — Kubernetes-native fencing for HDFS NameNode HA
 # ══════════════════════════════════════════════════════════════════════════════
 #
-# Appelé par ZKFC lors d'un failover automatique OU d'un failover manuel :
+# Called by ZKFC during automatic failover OR manual failover :
 #   hdfs haadmin -failover nn0 nn1
 #
-# HDFS passe l'adresse du nœud à fencer comme arguments :
+# HDFS passes the node address to fence as arguments :
 #   fence-namenode.sh <hostname-ou-ip> <port>
 #   Exemple : fence-namenode.sh hdfs-namenode-0.hdfs-namenode-headless.data-platform.svc.cluster.local 8020
 #
-# Ce script :
-#   1. Extrait l'ordinal du pod depuis le DNS du StatefulSet
-#   2. Force-delete le pod via l'API Kubernetes (depuis l'intérieur du cluster)
-#   3. Sort avec le code de sortie approprié (0 = succès, 1 = échec)
+# This script:
+#   1. Extracts the pod ordinal from the StatefulSet DNS
+#   2. Force-deletes the pod via the Kubernetes API (from inside the cluster)
+#   3. Exit with appropriate exit code (0 = success, 1 = failure)
 #
-# Prérequis :
+# Prerequisites :
 #   • ServiceAccount hdfs-namenode avec permission pods/delete sur le namespace
-#   • Token SA monté (automountServiceAccountToken: true sur le SA hdfs-namenode)
-#   • Ce script monté dans le pod depuis le ConfigMap hdfs-fence-script
+#   • SA token mounted (automountServiceAccountToken: true on hdfs-namenode SA)
+#   • This script mounted in the pod from the hdfs-fence-script ConfigMap
 #
-# IMPORTANT : le fencing est une dernière ligne de défense. ZKFC via ZooKeeper
-# est le mécanisme principal. Ce script protège contre le scénario "GC pause +
-# récupération tardive" où le NN actif reprend son activité après qu'un autre
+# IMPORTANT : le fencing est une last line of defense. ZKFC via ZooKeeper
+# is the primary mechanism. This script protects against the scenario "GC pause +
+# late recovery" where the NN resumes activity after another
 # NN a pris le leadership.
 # ══════════════════════════════════════════════════════════════════════════════
 set -euo pipefail
@@ -49,7 +49,7 @@ POD_NAME="hdfs-namenode-${ORDINAL}"
 NAMESPACE="${POD_NAMESPACE:-data-platform}"
 APISERVER="https://kubernetes.default.svc"
 
-# ── Token ServiceAccount monté par Kubernetes ─────────────────────────────────
+# ── ServiceAccount token mounted by Kubernetes ─────────────────────────────────
 TOKEN_FILE="/var/run/secrets/kubernetes.io/serviceaccount/token"
 CACERT="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 
@@ -81,7 +81,7 @@ case "$HTTP_CODE" in
     exit 0
     ;;
   404)
-    # Pod introuvable = déjà arrêté = fencing réussi par définition
+    # Pod not found = already stopped = fencing succeeded by definition
     echo "FENCING SUCCESS: Pod $POD_NAME already gone (HTTP 404)"
     exit 0
     ;;

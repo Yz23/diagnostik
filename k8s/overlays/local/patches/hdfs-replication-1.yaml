@@ -1,7 +1,7 @@
-# Réduit la réplication HDFS à 1 pour l'overlay local (1 seul DataNode).
-# Sans ce patch, HDFS refuse d'écrire car il ne peut pas répliquer à 3.
-# Ce patch génère un nouveau ConfigMap avec dfs.replication=1.
-# Il est appliqué uniquement par l'overlay local/.
+# Reduces HDFS replication to 1 for the local overlay (1 DataNode only).
+# Without this patch, HDFS refuses to write because it cannot replicate to 3.
+# This patch generates a new ConfigMap with dfs.replication=1.
+# It is applied only by the local/ overlay.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -24,7 +24,7 @@ data:
       <property><name>dfs.client.failover.proxy.provider.hdfs-cluster</name><value>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider</value></property>
       <property><name>dfs.ha.automatic-failover.enabled</name><value>true</value></property>
       <property><name>dfs.ha.fencing.methods</name><value>shell(/bin/true)</value></property>
-      <!-- LOCAL OVERLAY : réplication 1 car 1 seul DataNode -->
+      <!-- LOCAL OVERLAY: replication 1 because only 1 DataNode -->
       <property><name>dfs.replication</name><value>1</value></property>
       <property><name>dfs.datanode.data.dir</name><value>/hadoop/dfs/data</value></property>
       <property><name>dfs.namenode.name.dir</name><value>/hadoop/dfs/name</value></property>

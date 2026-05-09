@@ -1,5 +1,5 @@
-# IMPORTANT : remplacer REPLACE_WITH_YOUR_DOMAIN par votre domaine réel.
-# Créer un patch kustomize dans votre overlay (voir README).
+# IMPORTANT: replace REPLACE_WITH_YOUR_DOMAIN with your actual domain.
+# Create a kustomize patch in your overlay (see README).
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -16,10 +16,10 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
-    # FIX C2 : TLS activé — redirection HTTP→HTTPS systématique
+    # TLS enabled — systematic HTTP→HTTPS redirect
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    # FIX C2 : cert-manager gérera automatiquement le certificat Let's Encrypt
-    # Prérequis : déployer cert-manager + ClusterIssuer letsencrypt-prod
+    # cert-manager will automatically manage the Let's Encrypt certificate
+    # Prerequisites: deploy cert-manager + ClusterIssuer letsencrypt-prod
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
 spec:
   # FIX C2 : bloc TLS actif
@@ -49,12 +49,12 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/limit-rps: "30"
-    # FIX C2 : TLS activé sur YARN UI
+    # TLS enabled on YARN UI
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    # NOTE SÉCURITÉ : YARN UI n'a pas d'auth native robuste.
+    # SECURITY NOTE: YARN UI has no robust native auth.
     # En production, ajouter nginx.ingress.kubernetes.io/auth-url
-    # pointant vers oauth2-proxy, ou restreindre à un réseau privé.
+    # pointing to oauth2-proxy, or restrict to a private network.
     nginx.ingress.kubernetes.io/whitelist-source-range: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
 spec:
   tls:
@@ -83,10 +83,10 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/limit-rps: "30"
-    # FIX C2 : TLS activé sur HDFS NameNode UI
+    # TLS enabled on HDFS NameNode UI
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
-    # NOTE SÉCURITÉ : restreindre l'accès aux réseaux internes
+    # SECURITY NOTE: restrict access to internal networks
     nginx.ingress.kubernetes.io/whitelist-source-range: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
 spec:
   tls:

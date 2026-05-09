@@ -3,17 +3,17 @@
 # fence-namenode.sh — Fencing K8s-natif pour HDFS NameNode HA
 # ══════════════════════════════════════════════════════════════════════════════
 #
-# Appelé par ZKFC lors d'un failover automatique OU d'un failover manuel :
+# Called by ZKFC during automatic failover OR manual failover:
 #   hdfs haadmin -failover nn0 nn1
 #
-# HDFS passe l'adresse du nœud à fencer comme arguments :
+# HDFS passes the node address to fence as arguments:
 #   fence-namenode.sh <hostname-ou-ip> <port>
 #   Exemple : fence-namenode.sh hdfs-namenode-0.hdfs-namenode-headless.data-platform.svc.cluster.local 8020
 #
 # Ce script :
 #   1. Extrait l'ordinal du pod depuis le DNS du StatefulSet
-#   2. Force-delete le pod via l'API Kubernetes (depuis l'intérieur du cluster)
-#   3. Sort avec le code de sortie approprié (0 = succès, 1 = échec)
+#   2. Force-delete the pod via the Kubernetes API (from inside the cluster)
+#   3. Exit with appropriate exit code (0 = success, 1 = failure)
 #
 # Prérequis :
 #   • ServiceAccount hdfs-namenode avec permission pods/delete sur le namespace

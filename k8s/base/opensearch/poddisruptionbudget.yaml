@@ -23,7 +23,7 @@ spec:
       role: data
 
 ---
-# HDFS NameNode HA : au moins 1 NameNode disponible en permanence
+# HDFS NameNode HA : au moins 1 NameNode available en permanence
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -36,7 +36,7 @@ spec:
       app: hdfs
       role: namenode
 ---
-# HDFS JournalNode : quorum de 2 sur 3 requis (écriture des edit logs)
+# HDFS JournalNode: quorum of 2 out of 3 required (edit log writes)
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -61,7 +61,7 @@ spec:
     matchLabels:
       app: zookeeper
 ---
-# YARN ResourceManager HA : au moins 1 RM disponible
+# YARN ResourceManager HA : au moins 1 RM available
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:

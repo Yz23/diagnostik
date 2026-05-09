@@ -1,21 +1,21 @@
-# DIAGNOSTIK — Stack de développement local
+# DIAGNOSTIK — Local Dev Stack
 
-Reproduit la stack complète (OpenSearch, Logstash, HDFS, YARN) en mode single-node,
-sans Kubernetes. Idéal pour le développement et les tests rapides.
+Runs the full stack (OpenSearch, Logstash, HDFS, YARN) in single-node mode,
+without Kubernetes. Ideal for development and quick testing.
 
-## Démarrage rapide
+## Quick start
 
 ```bash
-# Depuis la racine du projet
+# From the project root
 cp .env.example .env
-# Définir OPENSEARCH_INITIAL_ADMIN_PASSWORD dans .env
+# Set OPENSEARCH_INITIAL_ADMIN_PASSWORD in .env
 
-make dev          # démarre la stack
-make dev-logs     # suit les logs
-make dev-down     # arrête et supprime les volumes
+make dev          # start the stack
+make dev-logs     # follow logs
+make dev-down     # stop and remove volumes
 ```
 
-## Ports exposés (localhost uniquement)
+## Exposed ports (localhost only)
 
 | Service                | Port  |
 |------------------------|-------|
@@ -28,31 +28,35 @@ make dev-down     # arrête et supprime les volumes
 | HDFS RPC               | 8020  |
 | YARN ResourceManager   | 8088  |
 
-## Architecture des configurations
+## Differences vs production Kubernetes
 
-Les fichiers de configuration sont **montés depuis `config/`**, répertoire partagé
-avec Kubernetes :
+| | Docker (dev) | Kubernetes (prod) |
+|---|---|---|
+| OpenSearch | 1 node, single-node discovery | 3 master + 3 data + 2 coordinator |
+| HDFS | 1 NameNode, replication=1 | 2 NameNodes HA + 3 JournalNodes |
+| YARN | 1 ResourceManager | 2 ResourceManagers HA |
+| JVM heap | 512MB per service | 1–4GB per role |
+| TLS | disabled | cert-manager PKI (tls.crt/tls.key/ca.crt) |
 
+## Configuration
+
+Edit `.env` before starting. The same file is used by Docker Compose and
+the Kubernetes deployment scripts — single source of truth.
+
+Key variables:
+
+| Variable | Description |
+|---|---|
+| `OPENSEARCH_INITIAL_ADMIN_PASSWORD` | Admin password (min 16 chars, 1 upper, 1 digit, 1 symbol) |
+| `OS_MASTER_HEAP` | OpenSearch JVM heap (default: 1g) |
+| `LS_HEAP_SIZE` | Logstash JVM heap (default: 1g) |
+| `HDFS_NAMENODE_HEAP` | HDFS NameNode JVM heap (default: 1g) |
+
+## Sync configs to k8s/base/
+
+The Logstash configs and fence script are shared between Docker Compose and Kubernetes.
+After editing `config/logstash/` or `scripts/fence-namenode.sh`, sync to `k8s/base/`:
+
+```bash
+make sync-configs
 ```
-config/
-├── logstash/
-│   ├── logstash.yml      → monté par Docker ET généré en ConfigMap K8s
-│   └── pipeline.conf     → idem (env vars pour ssl : LS_SSL_ENABLED)
-└── hadoop/
-    ├── core-site.xml     → monté par Docker (single-node)
-    ├── hdfs-site-dev.xml → monté par Docker (réplication=1)
-    ├── yarn-site-dev.xml → monté par Docker
-    └── mapred-site.xml   → monté par Docker
-```
-
-**Modifier un fichier dans `config/` → répercuté dans les deux environnements.**
-
-## Différences dev vs prod
-
-| Paramètre          | Docker (dev)          | Kubernetes (prod)           |
-|--------------------|-----------------------|-----------------------------|
-| OpenSearch         | single-node, demo-certs | cluster 3 masters + 3 data |
-| TLS HTTP           | désactivé             | activé (cert-manager)       |
-| HDFS HA            | non (single-node)     | oui (2 NameNodes + ZK)      |
-| YARN HA            | non                   | oui (2 ResourceManagers)    |
-| Secrets            | `.env`                | Kubernetes Secrets          |

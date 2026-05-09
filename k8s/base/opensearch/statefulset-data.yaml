@@ -80,7 +80,7 @@ spec:
             limits:
               memory: "4Gi"
               cpu: "2000m"
-          # FIX C3 : startupProbe — 10 min pour le premier démarrage avant livenessProbe
+          # FIX C3 : startupProbe — 10 min for first startup before livenessProbe
           startupProbe:
             exec:
               command:
@@ -126,7 +126,7 @@ spec:
         - name: tls-certs
           secret:
             secretName: opensearch-tls-certs
-            # Créer avec : make secret-tls  (ou : bash scripts/generate-certs-dev.sh)
+            # Create with: make secret-tls  (or: bash scripts/generate-certs-dev.sh)
             # En prod    : cert-manager alimente ce Secret automatiquement
   volumeClaimTemplates:
     - metadata:

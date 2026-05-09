@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # ══════════════════════════════════════════════════════════════════════════════
-# bootstrap-backend.sh — initialise le remote state Terraform
+# bootstrap-backend.sh — initializes the Terraform remote state
 # ══════════════════════════════════════════════════════════════════════════════
 # Usage : bash scripts/bootstrap-backend.sh <PROVIDER> [OPTIONS]
-# Providers : gcp | aws | azure | local
+# Providers: gcp | aws | azure | local
 # ──────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
 LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/common.sh"
-[ -f "${LIB}" ] && source "${LIB}" || { echo "ERREUR : scripts/lib/common.sh introuvable"; exit 1; }
+[ -f "${LIB}" ] && source "${LIB}" || { echo "ERREUR : scripts/lib/common.sh not found"; exit 1; }
 ensure_repo_root
 
 PROVIDER="${1:-}"
@@ -35,27 +35,27 @@ bootstrap_gcp() {
   local bucket="${BUCKET:-${project}-tf-state}"
   local tfbackend="${BACKENDS_DIR}/gcp.tfbackend"
 
-  log_step "[GCP] Bootstrap remote state Terraform"
-  log_info "Projet : ${project} | Région : ${region} | Bucket : ${bucket}"
+  log_step "[GCP] Bootstrap Terraform remote state"
+  log_info "Project : ${project} | Region : ${region} | Bucket : ${bucket}"
 
   if ! gsutil ls "gs://${bucket}" &>/dev/null; then
-    log_info "Création bucket GCS gs://${bucket}..."
+    log_info "Creating GCS bucket gs://${bucket}..."
     gsutil mb -l "${region}" -p "${project}" "gs://${bucket}"
     gsutil versioning set on "gs://${bucket}"
     gsutil lifecycle set /dev/stdin "gs://${bucket}" << 'LC'
 {"rule":[{"action":{"type":"Delete"},"condition":{"numNewerVersions":10,"isLive":false}}]}
 LC
-    log_ok "Bucket créé (versioning + lifecycle 10 versions max)"
+    log_ok "Bucket created (versioning + lifecycle 10 versions max)"
   else
-    log_ok "Bucket gs://${bucket} existe déjà"
+    log_ok "Bucket gs://${bucket} already exists"
   fi
 
   printf 'bucket = "%s"\nprefix = "data-platform/gcp"\n' "${bucket}" > "${tfbackend}"
-  log_ok "${tfbackend} généré"
+  log_ok "${tfbackend} generated"
 
   terraform -chdir="${MODULE_DIR}/gcp-gke" init \
     -backend-config="../../${tfbackend}" -reconfigure
-  log_ok "Terraform GKE initialisé avec remote state"
+  log_ok "Terraform GKE initialized with remote state"
 }
 
 # ── AWS ──────────────────────────────────────────────────────────────────────
@@ -68,11 +68,11 @@ bootstrap_aws() {
   local table="${TABLE:-tf-state-lock}"
   local tfbackend="${BACKENDS_DIR}/aws.tfbackend"
 
-  log_step "[AWS] Bootstrap remote state Terraform"
-  log_info "Région : ${region} | Bucket : ${bucket} | Table : ${table}"
+  log_step "[AWS] Bootstrap Terraform remote state"
+  log_info "Region : ${region} | Bucket : ${bucket} | Table : ${table}"
 
   if ! aws s3 ls "s3://${bucket}" &>/dev/null; then
-    log_info "Création bucket S3..."
+    log_info "Creating S3 bucket..."
     if [[ "${region}" == "us-east-1" ]]; then
       aws s3 mb "s3://${bucket}" --region "${region}"
     else
@@ -88,49 +88,49 @@ bootstrap_aws() {
     aws s3api put-public-access-block --bucket "${bucket}" \
       --public-access-block-configuration \
       "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
-    log_ok "Bucket S3 créé (versioning + chiffrement AES256 + accès public bloqué)"
+    log_ok "S3 bucket created (versioning + AES256 encryption + public access blocked)"
   else
-    log_ok "Bucket s3://${bucket} existe déjà"
+    log_ok "Bucket s3://${bucket} already exists"
   fi
 
   if ! aws dynamodb describe-table --table-name "${table}" --region "${region}" &>/dev/null; then
-    log_info "Création table DynamoDB ${table}..."
+    log_info "Creating DynamoDB table ${table}..."
     aws dynamodb create-table \
       --table-name "${table}" \
       --attribute-definitions AttributeName=LockID,AttributeType=S \
       --key-schema AttributeName=LockID,KeyType=HASH \
       --billing-mode PAY_PER_REQUEST --region "${region}" > /dev/null
-    log_ok "Table DynamoDB créée"
+    log_ok "DynamoDB table created"
   else
-    log_ok "Table DynamoDB ${table} existe déjà"
+    log_ok "DynamoDB table ${table} already exists"
   fi
 
   printf 'bucket         = "%s"\nkey            = "data-platform/aws/terraform.tfstate"\nregion         = "%s"\ndynamodb_table = "%s"\nencrypt        = true\n' \
     "${bucket}" "${region}" "${table}" > "${tfbackend}"
-  log_ok "${tfbackend} généré"
+  log_ok "${tfbackend} generated"
 
   terraform -chdir="${MODULE_DIR}/aws-eks" init \
     -backend-config="../../${tfbackend}" -reconfigure
-  log_ok "Terraform EKS initialisé avec remote state"
+  log_ok "Terraform EKS initialized with remote state"
 }
 
 # ── Azure ─────────────────────────────────────────────────────────────────────
 bootstrap_azure() {
   local location="${LOCATION:-westeurope}"
   local rg="${RESOURCE_GROUP:-rg-tfstate}"
-  # Générer un nom unique si non défini (Storage Account : max 24 chars, alphanum seulement)
+  # Generate a unique name if not set (Storage Account : max 24 chars, alphanum seulement)
   local sa="${STORAGE_ACCOUNT:-tfstate$(date +%s | tail -c8)}"
   local container="tfstate"
   local tfbackend="${BACKENDS_DIR}/azure.tfbackend"
 
-  log_step "[Azure] Bootstrap remote state Terraform"
+  log_step "[Azure] Bootstrap Terraform remote state"
   log_info "Location : ${location} | RG : ${rg} | Storage : ${sa}"
 
   if ! az group show --name "${rg}" &>/dev/null; then
     az group create --name "${rg}" --location "${location}" > /dev/null
-    log_ok "Resource Group ${rg} créé"
+    log_ok "Resource Group ${rg} created"
   else
-    log_ok "Resource Group ${rg} existe déjà"
+    log_ok "Resource Group ${rg} already exists"
   fi
 
   if ! az storage account show --name "${sa}" --resource-group "${rg}" &>/dev/null; then
@@ -138,9 +138,9 @@ bootstrap_azure() {
       --name "${sa}" --resource-group "${rg}" --location "${location}" \
       --sku Standard_LRS --kind StorageV2 \
       --https-only true --min-tls-version TLS1_2 > /dev/null
-    log_ok "Storage Account créé (HTTPS only, TLS 1.2)"
+    log_ok "Storage Account created (HTTPS only, TLS 1.2)"
   else
-    log_ok "Storage Account ${sa} existe déjà"
+    log_ok "Storage Account ${sa} already exists"
   fi
 
   local key
@@ -148,15 +148,15 @@ bootstrap_azure() {
     --account-name "${sa}" --query '[0].value' -o tsv)
   az storage container create --name "${container}" \
     --account-name "${sa}" --account-key "${key}" > /dev/null || true
-  log_ok "Container ${container} prêt"
+  log_ok "Container ${container} ready"
 
   printf 'resource_group_name  = "%s"\nstorage_account_name = "%s"\ncontainer_name       = "%s"\nkey                  = "data-platform/azure/terraform.tfstate"\n' \
     "${rg}" "${sa}" "${container}" > "${tfbackend}"
-  log_ok "${tfbackend} généré"
+  log_ok "${tfbackend} generated"
 
   terraform -chdir="${MODULE_DIR}/azure-aks" init \
     -backend-config="../../${tfbackend}" -reconfigure
-  log_ok "Terraform AKS initialisé avec remote state"
+  log_ok "Terraform AKS initialized with remote state"
 }
 
 # ── Local ─────────────────────────────────────────────────────────────────────
@@ -164,16 +164,16 @@ bootstrap_local() {
   local url="${BACKEND_URL:?BACKEND_URL requis (ex: https://backend.example.com)}"
   local tfbackend="${BACKENDS_DIR}/local.tfbackend"
 
-  log_step "[Local/Proxmox] Bootstrap remote state HTTP"
+  log_step "[Local/Proxmox] Bootstrap HTTP remote state"
   log_info "URL : ${url}"
 
   printf 'address        = "%s/data-platform/local"\nlock_address   = "%s/data-platform/local/lock"\nunlock_address = "%s/data-platform/local/lock"\n' \
     "${url}" "${url}" "${url}" > "${tfbackend}"
-  log_ok "${tfbackend} généré"
+  log_ok "${tfbackend} generated"
 
   terraform -chdir="${MODULE_DIR}/local-k3s" init \
     -backend-config="../../${tfbackend}" -reconfigure
-  log_ok "Terraform k3s initialisé avec remote state HTTP"
+  log_ok "Terraform k3s initialized with HTTP remote state"
 }
 
 # ── Dispatch ──────────────────────────────────────────────────────────────────
@@ -184,7 +184,7 @@ case "${PROVIDER}" in
   local) bootstrap_local ;;
 esac
 
-log_done "Backend Terraform initialisé — provider : ${PROVIDER}"
+log_done "Terraform backend initialized — provider : ${PROVIDER}"
 echo ""
-echo "  Prochaine étape : PROVIDER=${PROVIDER} make provision"
-echo "  Note : terraform/backends/${PROVIDER}.tfbackend est gitignore (ne pas commiter)"
+echo "  Next step : PROVIDER=${PROVIDER} make provision"
+echo "  Note : terraform/backends/${PROVIDER}.tfbackend is gitignored (do not commit)"

@@ -1,0 +1,68 @@
+<svg width="100%" viewBox="0 0 680 420" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>DIAGNOSTIK architecture overview</title>
+<desc>Makefile as single entry point, config/ as source of truth, branching to docker-compose (dev) and k8s/kustomize (prod), with terraform and ansible for provisioning</desc>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+<path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</marker>
+</defs>
+<!-- .env.example (dashed) -->
+<rect x="30" y="30" width="130" height="50" rx="8" fill="none" stroke-dasharray="5 3" stroke="var(--t)" stroke-width="1" opacity="0.5"/>
+<text class="ts" x="95" y="58" text-anchor="middle" fill="var(--t)" opacity="0.7">.env.example</text>
+<!-- Arrow .env -> Makefile -->
+<line x1="160" y1="55" x2="228" y2="55" stroke="var(--t)" stroke-width="1" stroke-dasharray="4 3" opacity="0.5" marker-end="url(#arrow)"/>
+<!-- Makefile -->
+<g class="c-purple">
+<rect x="232" y="26" width="216" height="58" rx="10" stroke-width="0.5"/>
+<text class="th" x="340" y="49" text-anchor="middle" dominant-baseline="central">Makefile</text>
+<text class="ts" x="340" y="67" text-anchor="middle" dominant-baseline="central">single entry point</text>
+</g>
+<!-- Arrow Makefile -> config -->
+<line x1="340" y1="84" x2="340" y2="118" stroke="var(--t)" stroke-width="1" opacity="0.6" marker-end="url(#arrow)"/>
+<!-- config/ -->
+<g class="c-teal">
+<rect x="232" y="122" width="216" height="58" rx="10" stroke-width="0.5"/>
+<text class="th" x="340" y="145" text-anchor="middle" dominant-baseline="central">config/</text>
+<text class="ts" x="340" y="163" text-anchor="middle" dominant-baseline="central">single source of truth</text>
+</g>
+<!-- Arrow config -> docker-compose -->
+<path d="M280 180 L185 230" fill="none" stroke="var(--t)" stroke-width="1" opacity="0.6" marker-end="url(#arrow)"/>
+<!-- Arrow config -> k8s -->
+<path d="M400 180 L495 230" fill="none" stroke="var(--t)" stroke-width="1" opacity="0.6" marker-end="url(#arrow)"/>
+<!-- docker-compose -->
+<g class="c-blue">
+<rect x="80" y="234" width="210" height="58" rx="10" stroke-width="0.5"/>
+<text class="th" x="185" y="257" text-anchor="middle" dominant-baseline="central">docker-compose</text>
+<text class="ts" x="185" y="275" text-anchor="middle" dominant-baseline="central">dev local · single-node</text>
+</g>
+<!-- k8s / kustomize -->
+<g class="c-coral">
+<rect x="390" y="234" width="210" height="58" rx="10" stroke-width="0.5"/>
+<text class="th" x="495" y="257" text-anchor="middle" dominant-baseline="central">k8s / kustomize</text>
+<text class="ts" x="495" y="275" text-anchor="middle" dominant-baseline="central">base + overlays</text>
+</g>
+<!-- Arrow docker -> terraform -->
+<path d="M140 292 L130 330" fill="none" stroke="var(--t)" stroke-width="1" opacity="0.6" marker-end="url(#arrow)"/>
+<!-- Arrow docker -> ansible -->
+<path d="M185 292 L265 330" fill="none" stroke="var(--t)" stroke-width="1" opacity="0.6" marker-end="url(#arrow)"/>
+<!-- Arrow k8s -> k8s overlays -->
+<path d="M495 292 L495 330" fill="none" stroke="var(--t)" stroke-width="1" opacity="0.6" marker-end="url(#arrow)"/>
+<!-- terraform/ -->
+<g class="c-amber">
+<rect x="30" y="334" width="160" height="58" rx="10" stroke-width="0.5"/>
+<text class="th" x="110" y="357" text-anchor="middle" dominant-baseline="central">terraform/</text>
+<text class="ts" x="110" y="375" text-anchor="middle" dominant-baseline="central">provision cluster</text>
+</g>
+<!-- ansible/ -->
+<g class="c-amber">
+<rect x="210" y="334" width="160" height="58" rx="10" stroke-width="0.5"/>
+<text class="th" x="290" y="357" text-anchor="middle" dominant-baseline="central">ansible/</text>
+<text class="ts" x="290" y="375" text-anchor="middle" dominant-baseline="central">configure nodes</text>
+</g>
+<!-- k8s/overlays -->
+<g class="c-coral">
+<rect x="390" y="334" width="210" height="58" rx="10" stroke-width="0.5"/>
+<text class="th" x="495" y="357" text-anchor="middle" dominant-baseline="central">k8s/overlays</text>
+<text class="ts" x="495" y="375" text-anchor="middle" dominant-baseline="central">gcp · aws · azure · local</text>
+</g>
+</svg>
