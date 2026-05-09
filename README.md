@@ -2,9 +2,13 @@
 
 <br/>
 
-# diagnostix
+<img src="docs/assets/diagnostik-logo.svg" alt="DIAGNOSTIK Logo" width="220"/>
 
-### Open Platform Data · IA Agnostic · Production-grade infrastructure for large-scale AI data collection & training pipelines
+<br/>
+
+# DIAGNOSTIK
+
+### Open Source Data & AI Stack
 
 <br/>
 
@@ -54,7 +58,9 @@ make help                          # toutes les commandes disponibles
 
 ## Purpose
 
-**Diagnostix** is an open, IA-agnostic data platform — designed to collect, store, process and index large volumes of data at scale for any AI workload. No vendor lock-in. Runs on GCP, AWS, Azure, or bare-metal Proxmox.
+**DIAGNOSTIK** — *Distributed Ingestion & Aggregation Grid — Native Open-Source Search, Transport & Intelligence on Kubernetes.*
+
+An open, IA-agnostic data platform designed to collect, store, process and index large volumes of data at scale for any AI workload. No vendor lock-in. Runs on GCP, AWS, Azure, or bare-metal Proxmox.
 
 The platform is built around three core concerns:
 
@@ -108,6 +114,37 @@ ZooKeeper x3  -->  JournalNodes x3  -->  NameNode nn0  (format + zkfc)
                                               v
                                          DataNodes x3
 ```
+
+---
+
+
+## Architecture
+
+<div align="center">
+<img src="docs/assets/diagram-architecture.svg" alt="DIAGNOSTIK architecture overview" width="680"/>
+</div>
+
+The Makefile is the single entry point. `config/` is the single source of truth — all configs are shared between Docker Compose (dev) and Kubernetes (prod) via `make sync-configs`.
+
+---
+
+## Data pipeline
+
+<div align="center">
+<img src="docs/assets/diagram-pipeline.svg" alt="DIAGNOSTIK data pipeline" width="680"/>
+</div>
+
+Logstash ingests from TCP, Beats, and HTTP inputs. Data flows into HDFS HA for storage + YARN for compute, and into OpenSearch for indexing + search. OpenSearch Dashboards provides visualization on port 5601.
+
+---
+
+## Security
+
+<div align="center">
+<img src="docs/assets/diagram-security.svg" alt="DIAGNOSTIK security layers" width="680"/>
+</div>
+
+Four concentric security layers: network perimeter (Ingress nginx + LoadBalancer), authentication (OpenSearch Security + Dashboards Auth), end-to-end TLS on all three ports (9300/9200/5601), and secrets managed via cert-manager PKI + K8s Secrets + Gitleaks CI.
 
 ---
 
@@ -434,7 +471,7 @@ Every push and pull request triggers:
 
 ## Roadmap
 
-Diagnostix covers the infrastructure layer. The next phases:
+DIAGNOSTIK covers the infrastructure layer. The next phases:
 
 - [ ] Ingestion layer — pluggable scrapers (Scrapy / Playwright) writing to HDFS via Logstash
 - [ ] Processing layer — Apache Spark jobs on YARN for cleaning, deduplication, embedding
@@ -464,6 +501,10 @@ Diagnostix covers the infrastructure layer. The next phases:
 <div align="center">
 
 <br/>
+
+<img src="docs/assets/diagnostik-logo.svg" alt="DIAGNOSTIK" width="80"/>
+
+**Search at scale. Built open.**
 
 Built with OpenSearch · Apache Hadoop · Kubernetes · Terraform · Ansible · Docker
 

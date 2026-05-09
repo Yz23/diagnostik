@@ -11,12 +11,12 @@ data:
     server.host: "0.0.0.0"
     server.port: 5601
 
-    # FIX C1 : utiliser HTTPS vers OpenSearch (après activation TLS côté OS)
+    # Use HTTPS towards OpenSearch (after enabling TLS on the OS side)
     # Remplacer http:// par https:// une fois les certs en place
     opensearch.hosts:
       - "https://opensearch:9200"
 
-    # FIX C1 : référencer la CA pour valider le certificat OpenSearch
+    # Reference the CA to validate the OpenSearch certificate
     opensearch.ssl.certificateAuthorities:
       - /usr/share/opensearch-dashboards/config/certs/ca.crt
     opensearch.ssl.verificationMode: full
@@ -34,8 +34,8 @@ data:
     opensearch_security.readonly_mode.roles:
       - kibana_read_only
 
-    # FIX M1 : cookie.secure DOIT être true quand TLS est activé sur l'Ingress
-    # Passer à false uniquement en dev local sans TLS
+    # cookie.secure MUST be true when TLS is enabled on the Ingress
+    # Set to false only in local dev without TLS
     opensearch_security.cookie.secure: true
 
     logging.verbose: false

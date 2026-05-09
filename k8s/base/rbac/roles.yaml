@@ -1,5 +1,5 @@
 # Roles RBAC minimaux — chaque composant ne peut faire que ce dont il a besoin.
-# Principe : aucune permission cluster-admin, aucun accès aux secrets d'autres composants.
+# Principle: no cluster-admin permission, no access to other components' secretsomposants.
 
 # ── OpenSearch : lecture de ses propres ConfigMaps et Secrets ─────────────────
 apiVersion: rbac.authorization.k8s.io/v1
@@ -72,9 +72,9 @@ rules:
     resources: ["configmaps"]
     resourceNames: ["hadoop-config"]
     verbs: ["get", "watch"]
-  # NOTE : accès pods retiré — les composants Hadoop n'ont pas besoin
-  #         de lister les pods pour fonctionner. Réactiver si un composant
-  #         spécifique le nécessite avec resourceNames restriction.
+  # NOTE : pod access removed — Hadoop components do not need
+  #         to list pods to function. Re-enable if a component
+  #         specific resource needs it with resourceNames restriction.
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -121,12 +121,12 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ---
 # ── HDFS NameNode : fencing K8s-natif ────────────────────────────────────────
-# Permission minimale pour exécuter le fencing : supprimer les pods NameNode.
-# Seul le SA hdfs-namenode reçoit ce rôle (pas le SA hadoop générique).
+# Minimal permission to run fencing: delete NameNode pods.
+# Only the hdfs-namenode SA gets this role (not the generic hadoop SA).
 #
-# Sécurité : ce rôle permet de supprimer N'IMPORTE quel pod dans le namespace.
+# Sécurité : this role allows deleting ANY pod in the namespace.
 # C'est le minimum requis car K8s RBAC ne supporte pas de filtre par labelSelector
-# dans les rules.resourceNames pour les ressources créées dynamiquement.
+# in rules.resourceNames for dynamically created resources.
 # Mitigation : le script fence-namenode.sh ne supprime que les pods hdfs-namenode-N.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -134,8 +134,8 @@ metadata:
   name: hdfs-namenode-fencer
   namespace: data-platform
 rules:
-  # get/list pour vérifier l'existence, delete pour le fencing
-  # (fusionné en une règle — principe RBAC : regrouper les verbes par ressource)
+  # get/list to check existence, delete for fencing
+  # (merged into one rule — RBAC principle: group verbs per resource)
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["get", "list", "delete"]

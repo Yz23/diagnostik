@@ -1,28 +1,28 @@
 #!/bin/bash
 # ══════════════════════════════════════════════════════════════════════════════
-# fence-namenode.sh — Kubernetes-native fencing for HDFS NameNode HA
+# fence-namenode.sh — Fencing K8s-natif pour HDFS NameNode HA
 # ══════════════════════════════════════════════════════════════════════════════
 #
-# Called by ZKFC during automatic failover OR manual failover :
+# Called by ZKFC during automatic failover OR manual failover:
 #   hdfs haadmin -failover nn0 nn1
 #
-# HDFS passes the node address to fence as arguments :
+# HDFS passes the node address to fence as arguments:
 #   fence-namenode.sh <hostname-ou-ip> <port>
 #   Exemple : fence-namenode.sh hdfs-namenode-0.hdfs-namenode-headless.data-platform.svc.cluster.local 8020
 #
-# This script:
-#   1. Extracts the pod ordinal from the StatefulSet DNS
-#   2. Force-deletes the pod via the Kubernetes API (from inside the cluster)
+# Ce script :
+#   1. Extrait l'ordinal du pod depuis le DNS du StatefulSet
+#   2. Force-delete the pod via the Kubernetes API (from inside the cluster)
 #   3. Exit with appropriate exit code (0 = success, 1 = failure)
 #
-# Prerequisites :
+# Prérequis :
 #   • ServiceAccount hdfs-namenode avec permission pods/delete sur le namespace
-#   • SA token mounted (automountServiceAccountToken: true on hdfs-namenode SA)
-#   • This script mounted in the pod from the hdfs-fence-script ConfigMap
+#   • Token SA monté (automountServiceAccountToken: true sur le SA hdfs-namenode)
+#   • Ce script monté dans le pod depuis le ConfigMap hdfs-fence-script
 #
-# IMPORTANT : le fencing est une last line of defense. ZKFC via ZooKeeper
-# is the primary mechanism. This script protects against the scenario "GC pause +
-# late recovery" where the NN resumes activity after another
+# IMPORTANT : le fencing est une dernière ligne de défense. ZKFC via ZooKeeper
+# est le mécanisme principal. Ce script protège contre le scénario "GC pause +
+# récupération tardive" où le NN actif reprend son activité après qu'un autre
 # NN a pris le leadership.
 # ══════════════════════════════════════════════════════════════════════════════
 set -euo pipefail
@@ -49,7 +49,7 @@ POD_NAME="hdfs-namenode-${ORDINAL}"
 NAMESPACE="${POD_NAMESPACE:-data-platform}"
 APISERVER="https://kubernetes.default.svc"
 
-# ── ServiceAccount token mounted by Kubernetes ─────────────────────────────────
+# ── Token ServiceAccount monté par Kubernetes ─────────────────────────────────
 TOKEN_FILE="/var/run/secrets/kubernetes.io/serviceaccount/token"
 CACERT="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 
@@ -81,7 +81,7 @@ case "$HTTP_CODE" in
     exit 0
     ;;
   404)
-    # Pod not found = already stopped = fencing succeeded by definition
+    # Pod introuvable = déjà arrêté = fencing réussi par définition
     echo "FENCING SUCCESS: Pod $POD_NAME already gone (HTTP 404)"
     exit 0
     ;;

@@ -8,7 +8,7 @@ variable "proxmox_api_url" {
 }
 
 variable "proxmox_user" {
-  type        = string
+  type = string
   # FIX B9 : Ne pas utiliser root@pam en production.
   # Créer un compte de service dédié avec des permissions minimales :
   #   pveum user add terraform@pve
