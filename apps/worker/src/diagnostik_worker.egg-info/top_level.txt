@@ -1,7 +1,0 @@
-consumers
-embedding
-enrichment
-indexing
-main
-pipelines
-tasks

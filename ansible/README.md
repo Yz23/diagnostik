@@ -33,7 +33,7 @@ ansible-playbook -i inventories/proxmox/ playbooks/01-base-setup.yml
 ansible-playbook -i inventories/proxmox/ playbooks/02-k3s-cluster.yml
 
 # 6. Deploy the platform
-export OPENSEARCH_INITIAL_ADMIN_PASSWORD='YourStr0ng!Pass1'
+export OPENSEARCH_INITIAL_ADMIN_PASSWORD='<set-a-strong-secret>'
 bash ../scripts/create-secrets.sh
 ansible-playbook -i inventories/proxmox/ playbooks/04-deploy-platform.yml
 ```
