@@ -77,7 +77,7 @@ The platform is built around three core concerns:
 ## Architecture
 
 ```
-                    ┌─────────────────────────────────────────────────┐
+                    ┌──────────────────────────────────────────────────┐
   Internet          │              namespace: data-platform            │
      │              │                                                  │
      ▼              │  ┌──────────────────── Search ────────────────┐  │
@@ -98,12 +98,12 @@ The platform is built around three core concerns:
                     │  │  datanode       x3  [StatefulSet] 100Gi    │  │
                     │  └────────────────────────────────────────────┘  │
                     │                                                  │
-                    │  ┌──────────── Resource Management ────────────┐  │
+                    │  ┌──────────── Resource Management ───────────┐  │
                     │  │  resourcemanager  x2  [StatefulSet] HA     │  │
                     │  │  nodemanager          [DaemonSet]          │  │
                     │  │  historyserver    x1  [Deployment]         │  │
                     │  └────────────────────────────────────────────┘  │
-                    └─────────────────────────────────────────────────┘
+                    └──────────────────────────────────────────────────┘
 ```
 
 **HDFS boot sequence** — enforced automatically by `initContainers`:
@@ -121,7 +121,7 @@ ZooKeeper x3  -->  JournalNodes x3  -->  NameNode nn0  (format + zkfc)
 ## Architecture
 
 <div align="center">
-<img src="docs/assets/diagram-architecture.svg" alt="DIAGNOSTIK architecture overview" width="680"/>
+<img src="docs/assets/diagram-architecture.png" alt="DIAGNOSTIK architecture overview" width="680"/>
 </div>
 
 The Makefile is the single entry point. `config/` is the single source of truth — all configs are shared between Docker Compose (dev) and Kubernetes (prod) via `make sync-configs`.
@@ -131,7 +131,7 @@ The Makefile is the single entry point. `config/` is the single source of truth 
 ## Data pipeline
 
 <div align="center">
-<img src="docs/assets/diagram-pipeline.svg" alt="DIAGNOSTIK data pipeline" width="680"/>
+<img src="docs/assets/diagram-pipeline.png" alt="DIAGNOSTIK data pipeline" width="680"/>
 </div>
 
 Logstash ingests from TCP, Beats, and HTTP inputs. Data flows into HDFS HA for storage + YARN for compute, and into OpenSearch for indexing + search. OpenSearch Dashboards provides visualization on port 5601.
@@ -141,7 +141,7 @@ Logstash ingests from TCP, Beats, and HTTP inputs. Data flows into HDFS HA for s
 ## Security
 
 <div align="center">
-<img src="docs/assets/diagram-security.svg" alt="DIAGNOSTIK security layers" width="680"/>
+<img src="docs/assets/diagram-security.png" alt="DIAGNOSTIK security layers" width="680"/>
 </div>
 
 Four concentric security layers: network perimeter (Ingress nginx + LoadBalancer), authentication (OpenSearch Security + Dashboards Auth), end-to-end TLS on all three ports (9300/9200/5601), and secrets managed via cert-manager PKI + K8s Secrets + Gitleaks CI.
