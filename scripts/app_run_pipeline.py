@@ -1,7 +1,15 @@
 from __future__ import annotations
 
 import json
+import os
 from http.client import HTTPConnection
+
+
+def headers() -> dict[str, str]:
+    request_headers = {"Content-Type": "application/json"}
+    if api_key := os.getenv("DIAGNOSTIK_API_KEY"):
+        request_headers["X-API-Key"] = api_key
+    return request_headers
 
 
 def main() -> None:
@@ -11,7 +19,7 @@ def main() -> None:
         "POST",
         "/pipelines/default_text_indexing/runs",
         body=payload,
-        headers={"Content-Type": "application/json"},
+        headers=headers(),
     )
     response = connection.getresponse()
     print(response.read().decode())

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.observability.middleware import RequestIdMiddleware
-from app.routers import connectors, datasets, health, pipelines, search, workspaces
+from app.routers import admin, connectors, datasets, health, pipelines, search, workspaces
 from diagnostik_common.config import get_settings
 from diagnostik_common.logging import configure_logging
 
@@ -33,3 +33,4 @@ app.include_router(datasets.router)
 app.include_router(connectors.router)
 app.include_router(pipelines.router)
 app.include_router(search.router)
+app.include_router(admin.router)

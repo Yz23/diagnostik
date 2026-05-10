@@ -8,11 +8,11 @@ import yaml  # type: ignore[import-untyped]
 from diagnostik_common.embedding import EmbeddingProvider, MockEmbeddingProvider
 from diagnostik_common.errors import PipelineError
 from diagnostik_common.schemas import EmbeddingRecord, Pipeline, PipelineRun, RunStatus, utcnow
-from diagnostik_common.storage import InMemoryStore
+from diagnostik_common.storage import MetadataStore
 
 
 class PipelineEngine:
-    def __init__(self, store: InMemoryStore, embedding_provider: EmbeddingProvider | None = None) -> None:
+    def __init__(self, store: MetadataStore, embedding_provider: EmbeddingProvider | None = None) -> None:
         self.store = store
         self.embedding_provider = embedding_provider or MockEmbeddingProvider()
 

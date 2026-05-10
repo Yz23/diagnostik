@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from app.security.api_key import require_api_key
 from diagnostik_common.schemas import Workspace
 from diagnostik_common.storage import store
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
 
-@router.post("", response_model=Workspace)
+@router.post("", response_model=Workspace, dependencies=[Depends(require_api_key)])
 def create_workspace(workspace: Workspace) -> Workspace:
     store.workspaces[workspace.id] = workspace
     return workspace

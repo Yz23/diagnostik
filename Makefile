@@ -10,6 +10,20 @@
 ifneq (,$(wildcard .env))
 include .env
 endif
+DIAGNOSTIK_ENVIRONMENT ?= local
+DIAGNOSTIK_RUNTIME ?= memory
+DIAGNOSTIK_AUTH_MODE ?= none
+DIAGNOSTIK_API_KEY ?=
+DIAGNOSTIK_PLUGIN_PATH ?=
+DIAGNOSTIK_OPENSEARCH_URL ?= http://localhost:9200
+DIAGNOSTIK_DOCUMENTS_INDEX ?= diagnostik-documents-write
+export DIAGNOSTIK_ENVIRONMENT
+export DIAGNOSTIK_RUNTIME
+export DIAGNOSTIK_AUTH_MODE
+export DIAGNOSTIK_API_KEY
+export DIAGNOSTIK_PLUGIN_PATH
+export DIAGNOSTIK_OPENSEARCH_URL
+export DIAGNOSTIK_DOCUMENTS_INDEX
 PROVIDER  ?= $(or $(PROVIDER),local)
 NS        := data-platform
 COMPOSE   := docker compose -f docker/docker-compose.yml
