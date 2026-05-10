@@ -169,6 +169,8 @@ Current public connector scope:
 - No real secrets in Git.
 - `.env.example` contains empty placeholders only.
 - API key mode is available for POC; JWT/OIDC is planned for MVP.
+- `DIAGNOSTIK_AUTH_MODE=api_key` requires `DIAGNOSTIK_API_KEY` and protects write/admin endpoints.
+- `DIAGNOSTIK_RUNTIME=memory` is the supported POC runtime; `opensearch` and `postgres` are explicit extension contracts for MVP backends.
 - External AI providers are disabled by default.
 - Mock/local embedding providers are the default path.
 - Private plugins are loaded only from explicit paths.

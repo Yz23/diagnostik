@@ -6,6 +6,8 @@
 - FastAPI POC with health, connector, dataset, pipeline, and search endpoints.
 - Mock connector demo end-to-end.
 - Pipeline YAML engine with mock embeddings.
+- `DIAGNOSTIK_RUNTIME=memory` as the supported POC runtime.
+- API key enforcement on write and admin endpoints when `DIAGNOSTIK_AUTH_MODE=api_key`.
 - OpenSearch templates for documents, embeddings, and audit events.
 - Streamlit UI POC.
 - App CI with ruff, mypy, pytest, pip-audit, and bandit.
@@ -15,6 +17,7 @@
 
 - Persistent workspace and metadata store with PostgreSQL.
 - API key hardening plus JWT/OIDC integration.
+- OpenSearch search backend implementation behind the `DIAGNOSTIK_RUNTIME=opensearch` contract.
 - Kafka-backed workers for asynchronous connector and pipeline execution.
 - File, API, RSS, database, and compliant public web data source adapters.
 - Durable OpenSearch indexing and reindex workflows.

@@ -1,14 +1,15 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
+from app.security.api_key import require_api_key
 from diagnostik_common.schemas import Dataset, Document
 from diagnostik_common.storage import store
 
 router = APIRouter(tags=["datasets", "documents"])
 
 
-@router.post("/datasets", response_model=Dataset)
+@router.post("/datasets", response_model=Dataset, dependencies=[Depends(require_api_key)])
 def create_dataset(dataset: Dataset) -> Dataset:
     store.datasets[dataset.id] = dataset
     return dataset
@@ -29,7 +30,7 @@ def get_dataset(dataset_id: str) -> Dataset:
     return store.datasets[dataset_id]
 
 
-@router.post("/documents", response_model=Document)
+@router.post("/documents", response_model=Document, dependencies=[Depends(require_api_key)])
 def create_document(document: Document) -> Document:
     store.documents[document.id] = document
     return document
