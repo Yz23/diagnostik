@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 460" width="800">
+<rect width="800" height="460" fill="#1a1c2e" rx="12"/>
+
+<!-- Section 1 -->
+<text x="20" y="26" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#5a6080">1 — Perimeter &amp; network</text>
+<rect x="180" y="36" width="182" height="64" rx="10" fill="#2c3040" stroke="#4a505f" stroke-width="0.5"/>
+<text x="271" y="61" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="500" fill="#c8ced8" text-anchor="middle" dominant-baseline="central">Ingress nginx</text>
+<text x="271" y="82" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#6a7080" text-anchor="middle" dominant-baseline="central">TLS termination</text>
+<rect x="378" y="36" width="182" height="64" rx="10" fill="#3d1505" stroke="#993C1D" stroke-width="0.5"/>
+<text x="469" y="61" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="500" fill="#f0997b" text-anchor="middle" dominant-baseline="central">LoadBalancer</text>
+<text x="469" y="82" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#a05030" text-anchor="middle" dominant-baseline="central">GCP · AWS · Azure</text>
+<rect x="576" y="36" width="202" height="64" rx="10" fill="#2c3040" stroke="#4a505f" stroke-width="0.5"/>
+<text x="677" y="61" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="500" fill="#c8ced8" text-anchor="middle" dominant-baseline="central">NodePort</text>
+<text x="677" y="82" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#6a7080" text-anchor="middle" dominant-baseline="central">dev local k3s</text>
+
+<line x1="20" y1="116" x2="780" y2="116" stroke="#303550" stroke-width="0.5"/>
+
+<!-- Section 2 -->
+<text x="20" y="132" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#5a6080">2 — Authentication</text>
+<rect x="180" y="142" width="286" height="64" rx="10" fill="#2d2a5e" stroke="#534AB7" stroke-width="0.5"/>
+<text x="323" y="167" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="500" fill="#afa9ec" text-anchor="middle" dominant-baseline="central">OpenSearch Security</text>
+<text x="323" y="188" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#7a73b8" text-anchor="middle" dominant-baseline="central">admin · roles · multi-tenant</text>
+<rect x="482" y="142" width="296" height="64" rx="10" fill="#0a2e55" stroke="#185FA5" stroke-width="0.5"/>
+<text x="630" y="167" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="500" fill="#85b7eb" text-anchor="middle" dominant-baseline="central">API key (POC)</text>
+<text x="630" y="188" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#3a7aaa" text-anchor="middle" dominant-baseline="central">JWT/OIDC planned for MVP</text>
+
+<line x1="20" y1="222" x2="780" y2="222" stroke="#303550" stroke-width="0.5"/>
+
+<!-- Section 3 -->
+<text x="20" y="238" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#5a6080">3 — End-to-end TLS</text>
+<rect x="180" y="248" width="182" height="64" rx="10" fill="#0a3d2a" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="271" y="273" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="500" fill="#4dd4a0" text-anchor="middle" dominant-baseline="central">Transport :9300</text>
+<text x="271" y="294" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#1a9e70" text-anchor="middle" dominant-baseline="central">inter-node OS</text>
+<rect x="378" y="248" width="182" height="64" rx="10" fill="#0a3d2a" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="469" y="273" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="500" fill="#4dd4a0" text-anchor="middle" dominant-baseline="central">HTTP :9200</text>
+<text x="469" y="294" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#1a9e70" text-anchor="middle" dominant-baseline="central">clients → cluster</text>
+<rect x="576" y="248" width="202" height="64" rx="10" fill="#0a3d2a" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="677" y="273" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="500" fill="#4dd4a0" text-anchor="middle" dominant-baseline="central">HTTPS :5601</text>
+<text x="677" y="294" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#1a9e70" text-anchor="middle" dominant-baseline="central">Dashboards access</text>
+
+<line x1="20" y1="328" x2="780" y2="328" stroke="#303550" stroke-width="0.5"/>
+
+<!-- Section 4 -->
+<text x="20" y="344" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#5a6080">4 — Secrets &amp; CI</text>
+<rect x="180" y="354" width="182" height="64" rx="10" fill="#3a2100" stroke="#854F0B" stroke-width="0.5"/>
+<text x="271" y="379" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="500" fill="#e5a020" text-anchor="middle" dominant-baseline="central">cert-manager</text>
+<text x="271" y="400" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#b07818" text-anchor="middle" dominant-baseline="central">internal PKI</text>
+<rect x="378" y="354" width="182" height="64" rx="10" fill="#3a2100" stroke="#854F0B" stroke-width="0.5"/>
+<text x="469" y="379" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="500" fill="#e5a020" text-anchor="middle" dominant-baseline="central">K8s Secrets</text>
+<text x="469" y="400" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#b07818" text-anchor="middle" dominant-baseline="central">create-secrets.sh</text>
+<rect x="576" y="354" width="202" height="64" rx="10" fill="#3a2100" stroke="#854F0B" stroke-width="0.5"/>
+<text x="677" y="379" font-family="system-ui,-apple-system,sans-serif" font-size="14" font-weight="500" fill="#e5a020" text-anchor="middle" dominant-baseline="central">Gitleaks CI</text>
+<text x="677" y="400" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#b07818" text-anchor="middle" dominant-baseline="central">0 secret committed</text>
+</svg>

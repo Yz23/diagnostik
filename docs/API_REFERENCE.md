@@ -14,14 +14,6 @@ Initial endpoints:
 - `POST /search/text`
 - `POST /search/vector`
 - `POST /search/hybrid`
-- `GET /admin/stats`
-- `POST /admin/indexes/bootstrap`
-
-When `DIAGNOSTIK_AUTH_MODE=api_key`, write and admin endpoints require:
-
-```bash
-X-API-Key: $DIAGNOSTIK_API_KEY
-```
 
 Example:
 

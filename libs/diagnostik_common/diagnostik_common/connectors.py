@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Sequence
-from importlib import util
-from pathlib import Path
+from collections.abc import Iterable
 from typing import Any
 
 from pydantic import BaseModel
@@ -74,24 +72,3 @@ class ConnectorRegistry:
         if name not in self._connectors:
             raise KeyError(f"Unknown connector: {name}")
         return self._connectors[name]
-
-
-def load_connector_plugins(registry: ConnectorRegistry, paths: Sequence[str | Path]) -> list[str]:
-    loaded: list[str] = []
-    for base_path in paths:
-        path = Path(base_path).expanduser()
-        if not path.exists():
-            continue
-        plugin_files = [path] if path.is_file() else sorted(path.glob("*/plugin.py"))
-        for plugin_file in plugin_files:
-            module_name = f"diagnostik_plugin_{plugin_file.parent.name}"
-            spec = util.spec_from_file_location(module_name, plugin_file)
-            if spec is None or spec.loader is None:
-                continue
-            module = util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            register = getattr(module, "register", None)
-            if callable(register):
-                register(registry)
-                loaded.append(str(plugin_file))
-    return loaded

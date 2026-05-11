@@ -1,29 +1,19 @@
 from __future__ import annotations
 
 import json
-import os
-from http.client import HTTPConnection
-
-
-def headers() -> dict[str, str]:
-    request_headers = {"Content-Type": "application/json"}
-    if api_key := os.getenv("DIAGNOSTIK_API_KEY"):
-        request_headers["X-API-Key"] = api_key
-    return request_headers
+import urllib.request
 
 
 def main() -> None:
-    payload = json.dumps({"dataset_id": "demo"})
-    connection = HTTPConnection("127.0.0.1", 8000, timeout=10)
-    connection.request(
-        "POST",
-        "/pipelines/default_text_indexing/runs",
-        body=payload,
-        headers=headers(),
+    payload = json.dumps({"dataset_id": "demo"}).encode()
+    request = urllib.request.Request(
+        "http://127.0.0.1:8000/pipelines/default_text_indexing/runs",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
     )
-    response = connection.getresponse()
-    print(response.read().decode())
-    connection.close()
+    with urllib.request.urlopen(request, timeout=10) as response:
+        print(response.read().decode())
 
 
 if __name__ == "__main__":

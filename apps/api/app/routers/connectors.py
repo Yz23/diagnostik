@@ -3,9 +3,8 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 
-from app.security.api_key import require_api_key
 from app.services.runtime import registry
 from diagnostik_common.connectors import ConnectorDryRunResult
 from diagnostik_common.schemas import Connector, ConnectorRun, Dataset, RunStatus
@@ -32,7 +31,7 @@ def dry_run_connector(connector_name: str, config: dict[str, Any]) -> ConnectorD
     return registry.get(connector_name).dry_run(config)
 
 
-@router.post("/connectors/{connector_name}/runs", response_model=ConnectorRun, dependencies=[Depends(require_api_key)])
+@router.post("/connectors/{connector_name}/runs", response_model=ConnectorRun)
 def run_connector(connector_name: str, config: dict[str, Any]) -> ConnectorRun:
     connector = registry.get(connector_name)
     validated = connector.validate_config(config)
