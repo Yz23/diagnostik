@@ -28,7 +28,7 @@ The public core is intentionally generic. Private use cases, proprietary connect
 
 ## Not In Scope
 
-- No private-domain-specific connector in the public repository.
+- No social-network-specific connector.
 - No private dataset.
 - No proprietary pipeline.
 - No external AI provider enabled by default.

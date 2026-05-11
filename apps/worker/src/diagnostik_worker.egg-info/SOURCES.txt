@@ -1,0 +1,7 @@
+pyproject.toml
+src/main.py
+src/diagnostik_worker.egg-info/PKG-INFO
+src/diagnostik_worker.egg-info/SOURCES.txt
+src/diagnostik_worker.egg-info/dependency_links.txt
+src/diagnostik_worker.egg-info/requires.txt
+src/diagnostik_worker.egg-info/top_level.txt

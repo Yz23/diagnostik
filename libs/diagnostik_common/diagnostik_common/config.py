@@ -1,27 +1,13 @@
 import os
-from enum import StrEnum
 from functools import lru_cache
-
 from pydantic import BaseModel
-
-
-class AuthMode(StrEnum):
-    none = "none"
-    api_key = "api_key"
-
-
-class RuntimeMode(StrEnum):
-    memory = "memory"
-    opensearch = "opensearch"
-    postgres = "postgres"
 
 
 class Settings(BaseModel):
     environment: str = "local"
     service_name: str = "diagnostik"
     version: str = "0.1.0"
-    runtime: RuntimeMode = RuntimeMode.memory
-    auth_mode: AuthMode = AuthMode.none
+    auth_mode: str = "none"
     api_key: str | None = None
     plugin_path: str | None = None
     opensearch_url: str = "http://localhost:9200"
@@ -36,8 +22,7 @@ def get_settings() -> Settings:
         environment=os.getenv("DIAGNOSTIK_ENVIRONMENT", "local"),
         service_name=os.getenv("DIAGNOSTIK_SERVICE_NAME", "diagnostik"),
         version=os.getenv("DIAGNOSTIK_VERSION", "0.1.0"),
-        runtime=RuntimeMode(os.getenv("DIAGNOSTIK_RUNTIME") or "memory"),
-        auth_mode=AuthMode(os.getenv("DIAGNOSTIK_AUTH_MODE") or "none"),
+        auth_mode=os.getenv("DIAGNOSTIK_AUTH_MODE", "none"),
         api_key=os.getenv("DIAGNOSTIK_API_KEY") or None,
         plugin_path=os.getenv("DIAGNOSTIK_PLUGIN_PATH") or None,
         opensearch_url=os.getenv("DIAGNOSTIK_OPENSEARCH_URL", "http://localhost:9200"),

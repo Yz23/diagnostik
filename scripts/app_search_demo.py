@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from http.client import HTTPConnection
+import urllib.request
 
 
 def main() -> None:
@@ -12,12 +12,15 @@ def main() -> None:
         "search_type": "hybrid",
         "limit": 5,
         "filters": {"tags": ["demo"]},
-    })
-    connection = HTTPConnection("127.0.0.1", 8000, timeout=10)
-    connection.request("POST", "/search/hybrid", body=payload, headers={"Content-Type": "application/json"})
-    response = connection.getresponse()
-    print(response.read().decode())
-    connection.close()
+    }).encode()
+    request = urllib.request.Request(
+        "http://127.0.0.1:8000/search/hybrid",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=10) as response:
+        print(response.read().decode())
 
 
 if __name__ == "__main__":

@@ -17,4 +17,4 @@ User / Community UI / API
   -> Exploration UI
 ```
 
-The first POC uses `DIAGNOSTIK_RUNTIME=memory`, in-memory metadata, and mock embeddings. MVP backends can plug into the same contracts with `DIAGNOSTIK_RUNTIME=opensearch` for search and `DIAGNOSTIK_RUNTIME=postgres` for durable metadata.
+The first POC uses in-memory metadata and mock embeddings. Production-ready implementations can swap storage, queue, embedding, and indexing providers behind the shared interfaces.

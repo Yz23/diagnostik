@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 520" width="800">
+<rect width="800" height="520" fill="#1a1c2e" rx="12"/>
+
+<!-- Row 1: Access layer (gray) -->
+<rect x="20" y="20" width="760" height="64" rx="10" fill="#2c3040" stroke="#4a505f" stroke-width="0.5"/>
+<text x="400" y="47" font-family="system-ui,-apple-system,sans-serif" font-size="16" font-weight="500" fill="#d0d5e0" text-anchor="middle" dominant-baseline="central">Access layer</text>
+<text x="400" y="67" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#7d8499" text-anchor="middle" dominant-baseline="central">REST API · Streamlit UI · external clients · API key (POC) · OIDC (roadmap)</text>
+
+<!-- Row 2: App layer (purple) 3 boxes -->
+<rect x="20" y="104" width="242" height="70" rx="10" fill="#2d2a5e" stroke="#534AB7" stroke-width="0.5"/>
+<text x="141" y="131" font-family="system-ui,-apple-system,sans-serif" font-size="15" font-weight="500" fill="#afa9ec" text-anchor="middle" dominant-baseline="central">FastAPI API</text>
+<text x="141" y="153" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#7a73b8" text-anchor="middle" dominant-baseline="central">POC · in-memory runtime</text>
+
+<rect x="279" y="104" width="242" height="70" rx="10" fill="#2d2a5e" stroke="#534AB7" stroke-width="0.5"/>
+<text x="400" y="131" font-family="system-ui,-apple-system,sans-serif" font-size="15" font-weight="500" fill="#afa9ec" text-anchor="middle" dominant-baseline="central">Worker</text>
+<text x="400" y="153" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#7a73b8" text-anchor="middle" dominant-baseline="central">async processing scaffold</text>
+
+<rect x="538" y="104" width="242" height="70" rx="10" fill="#2d2a5e" stroke="#534AB7" stroke-width="0.5"/>
+<text x="659" y="131" font-family="system-ui,-apple-system,sans-serif" font-size="15" font-weight="500" fill="#afa9ec" text-anchor="middle" dominant-baseline="central">Streamlit UI</text>
+<text x="659" y="153" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#7a73b8" text-anchor="middle" dominant-baseline="central">POC exploration</text>
+
+<!-- Row 3: Connector registry (amber) -->
+<rect x="20" y="194" width="760" height="70" rx="10" fill="#3a2100" stroke="#854F0B" stroke-width="0.5"/>
+<text x="400" y="221" font-family="system-ui,-apple-system,sans-serif" font-size="15" font-weight="500" fill="#e5a020" text-anchor="middle" dominant-baseline="central">Connector registry</text>
+<text x="400" y="243" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#b07818" text-anchor="middle" dominant-baseline="central">mock · file · rss · api_generic · database · web_public · plugin extensions</text>
+
+<!-- Row 4: Storage (teal) 2 boxes -->
+<rect x="20" y="284" width="374" height="70" rx="10" fill="#0a3d2a" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="207" y="311" font-family="system-ui,-apple-system,sans-serif" font-size="15" font-weight="500" fill="#4dd4a0" text-anchor="middle" dominant-baseline="central">OpenSearch 2.17</text>
+<text x="207" y="333" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#1a9e70" text-anchor="middle" dominant-baseline="central">master×3 · data×3 · coord×2</text>
+
+<rect x="406" y="284" width="374" height="70" rx="10" fill="#0a3d2a" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="593" y="311" font-family="system-ui,-apple-system,sans-serif" font-size="15" font-weight="500" fill="#4dd4a0" text-anchor="middle" dominant-baseline="central">HDFS HA + YARN</text>
+<text x="593" y="333" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#1a9e70" text-anchor="middle" dominant-baseline="central">NN×2 · JN×3 · DN×3 · ZK×3</text>
+
+<!-- Row 5: K8s infra (gray) -->
+<rect x="20" y="374" width="760" height="70" rx="10" fill="#2c3040" stroke="#4a505f" stroke-width="0.5"/>
+<text x="400" y="401" font-family="system-ui,-apple-system,sans-serif" font-size="15" font-weight="500" fill="#d0d5e0" text-anchor="middle" dominant-baseline="central">Kubernetes infrastructure</text>
+<text x="400" y="423" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#7d8499" text-anchor="middle" dominant-baseline="central">GCP · AWS · Azure · local k3s · Terraform · Ansible · Kustomize overlays</text>
+
+<!-- Legend -->
+<rect x="192" y="466" width="108" height="24" rx="12" fill="#0a3d2a" stroke="#0F6E56" stroke-width="0.5"/>
+<text x="246" y="478" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#4dd4a0" text-anchor="middle" dominant-baseline="central">Advanced</text>
+
+<rect x="316" y="466" width="72" height="24" rx="12" fill="#2d2a5e" stroke="#534AB7" stroke-width="0.5"/>
+<text x="352" y="478" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#afa9ec" text-anchor="middle" dominant-baseline="central">POC</text>
+
+<rect x="404" y="466" width="88" height="24" rx="12" fill="#3a2100" stroke="#854F0B" stroke-width="0.5"/>
+<text x="448" y="478" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#e5a020" text-anchor="middle" dominant-baseline="central">Scaffold</text>
+
+<rect x="508" y="466" width="100" height="24" rx="12" fill="#2c3040" stroke="#4a505f" stroke-width="0.5"/>
+<text x="558" y="478" font-family="system-ui,-apple-system,sans-serif" font-size="12" fill="#d0d5e0" text-anchor="middle" dominant-baseline="central">Structural</text>
+</svg>
